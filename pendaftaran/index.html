@@ -230,6 +230,20 @@
   }
   #printBox{margin-top:18px; display:flex; flex-direction:column; gap:8px; text-align:left;}
   #printBox a{text-decoration:none; display:block; text-align:center; box-sizing:border-box;}
+
+  /* ---------- Alat bantu foto dokumen (scan) ---------- */
+  .scan-modal{position:fixed; inset:0; background:rgba(15,31,82,.92); z-index:200; display:flex; align-items:center; justify-content:center; padding:16px;}
+  .scan-modal[hidden]{display:none;}
+  .scan-modal-inner{background:#fff; border-radius:var(--radius); padding:18px; max-width:480px; width:100%; max-height:92vh; overflow-y:auto;}
+  .scan-modal-inner h3{margin:0 0 12px; font-size:17px; color:var(--pitch-900); font-family:'Oswald',sans-serif;}
+  .scan-guide-list{list-style:none; margin:0 0 16px; padding:0; display:flex; flex-direction:column; gap:10px;}
+  .scan-guide-list li{font-size:13.5px; background:var(--paper-0); border:1px solid var(--line-200); border-radius:10px; padding:10px 12px; line-height:1.4;}
+  .scan-modal-actions{display:flex; flex-direction:column; gap:8px;}
+  .scan-modal-actions .btn{flex:none;}
+  .scan-hint{font-size:12.5px; color:var(--ink-600); margin:0 0 12px;}
+  .scan-canvas-wrap{display:flex; justify-content:center; margin-bottom:14px; touch-action:none;}
+  .scan-canvas-wrap canvas{max-width:100%; border:1px solid var(--line-200); border-radius:8px; touch-action:none;}
+  .upload-btn.scan-trigger{border-style:solid;}
 </style>
 </head>
 <body>
@@ -408,57 +422,63 @@
     <p class="step-desc">Foto atau scan dokumen, format JPG/PNG/PDF, maksimal 5&nbsp;MB per file.</p>
 
     <div id="uploadList">
-      <div class="upload-item" data-field="file_akte_lahir">
+      <div class="upload-item" data-field="file_akte_lahir" data-scan="1">
         <div class="up-top">
           <div><div class="up-title">Akte Lahir <span class="req">*</span></div><div class="up-note">Copy akte kelahiran siswa</div></div>
           <div class="up-status" hidden>✓ Terpasang</div>
         </div>
-        <label class="upload-btn">📎 Pilih File<input type="file" name="file_akte_lahir" accept=".jpg,.jpeg,.png,.pdf"></label>
+        <button type="button" class="upload-btn scan-trigger">📷 Foto Dokumen (Terpandu)</button>
+        <input type="file" name="file_akte_lahir" accept=".jpg,.jpeg,.png,.pdf" hidden>
         <div class="file-name"></div>
       </div>
 
-      <div class="upload-item" data-field="file_ijazah_raport">
+      <div class="upload-item" data-field="file_ijazah_raport" data-scan="1">
         <div class="up-top">
           <div><div class="up-title">Ijazah / Raport</div><div class="up-note">Copy ijazah atau raport terakhir</div></div>
           <div class="up-status" hidden>✓ Terpasang</div>
         </div>
-        <label class="upload-btn">📎 Pilih File<input type="file" name="file_ijazah_raport" accept=".jpg,.jpeg,.png,.pdf"></label>
+        <button type="button" class="upload-btn scan-trigger">📷 Foto Dokumen (Terpandu)</button>
+        <input type="file" name="file_ijazah_raport" accept=".jpg,.jpeg,.png,.pdf" hidden>
         <div class="file-name"></div>
       </div>
 
-      <div class="upload-item" data-field="file_kartu_keluarga">
+      <div class="upload-item" data-field="file_kartu_keluarga" data-scan="1">
         <div class="up-top">
           <div><div class="up-title">Kartu Keluarga <span class="req">*</span></div><div class="up-note">Copy Kartu Keluarga (KK)</div></div>
           <div class="up-status" hidden>✓ Terpasang</div>
         </div>
-        <label class="upload-btn">📎 Pilih File<input type="file" name="file_kartu_keluarga" accept=".jpg,.jpeg,.png,.pdf"></label>
+        <button type="button" class="upload-btn scan-trigger">📷 Foto Dokumen (Terpandu)</button>
+        <input type="file" name="file_kartu_keluarga" accept=".jpg,.jpeg,.png,.pdf" hidden>
         <div class="file-name"></div>
       </div>
 
-      <div class="upload-item" data-field="file_raport_dalam">
+      <div class="upload-item" data-field="file_raport_dalam" data-scan="1">
         <div class="up-top">
           <div><div class="up-title">Raport Bagian Dalam</div><div class="up-note">Halaman data diri siswa + nilai semester terakhir</div></div>
           <div class="up-status" hidden>✓ Terpasang</div>
         </div>
-        <label class="upload-btn">📎 Pilih File<input type="file" name="file_raport_dalam" accept=".jpg,.jpeg,.png,.pdf"></label>
+        <button type="button" class="upload-btn scan-trigger">📷 Foto Dokumen (Terpandu)</button>
+        <input type="file" name="file_raport_dalam" accept=".jpg,.jpeg,.png,.pdf" hidden>
         <div class="file-name"></div>
       </div>
 
-      <div class="upload-item" data-field="file_nisn">
+      <div class="upload-item" data-field="file_nisn" data-scan="1">
         <div class="up-top">
           <div><div class="up-title">Bukti NISN</div><div class="up-note">Print/screenshot NISN dari situs resmi</div></div>
           <div class="up-status" hidden>✓ Terpasang</div>
         </div>
-        <label class="upload-btn">📎 Pilih File<input type="file" name="file_nisn" accept=".jpg,.jpeg,.png,.pdf"></label>
+        <button type="button" class="upload-btn scan-trigger">📷 Foto Dokumen (Terpandu)</button>
+        <input type="file" name="file_nisn" accept=".jpg,.jpeg,.png,.pdf" hidden>
         <div class="file-name"></div>
       </div>
 
-      <div class="upload-item" data-field="file_kia">
+      <div class="upload-item" data-field="file_kia" data-scan="1">
         <div class="up-top">
           <div><div class="up-title">Kartu Identitas Anak (KIA)</div><div class="up-note">Copy KIA siswa</div></div>
           <div class="up-status" hidden>✓ Terpasang</div>
         </div>
-        <label class="upload-btn">📎 Pilih File<input type="file" name="file_kia" accept=".jpg,.jpeg,.png,.pdf"></label>
+        <button type="button" class="upload-btn scan-trigger">📷 Foto Dokumen (Terpandu)</button>
+        <input type="file" name="file_kia" accept=".jpg,.jpeg,.png,.pdf" hidden>
         <div class="file-name"></div>
       </div>
 
@@ -564,6 +584,45 @@
   </section>
 
 </form>
+
+<div id="scanModal" class="scan-modal" hidden>
+  <div class="scan-modal-inner">
+
+    <div id="scanStepGuide" class="scan-step">
+      <h3>📷 Panduan Foto Dokumen</h3>
+      <ul class="scan-guide-list">
+        <li>☀️ Cahaya cukup &amp; rata — <b>tidak boleh silau</b> (hindari pantulan lampu/matahari di atas kertas sampai tulisan susah dibaca)</li>
+        <li>🌑 Pastikan <b>tidak ada bayangan</b> (tangan, HP, kepala) menutupi dokumen</li>
+        <li>📐 Pegang HP <b>tegak lurus tepat di atas</b> dokumen, bukan miring/serong</li>
+        <li>🖼️ Pastikan <b>seluruh bagian dokumen</b> masuk dalam layar sebelum memotret</li>
+        <li>✋ Tahan HP diam sebentar supaya hasil foto <b>tidak blur/goyang</b></li>
+      </ul>
+      <div class="scan-modal-actions">
+        <button type="button" class="btn btn-primary" id="scanBtnCamera">📷 Ambil Foto Sekarang</button>
+        <button type="button" class="btn btn-ghost" id="scanBtnGallery">🖼️ Pilih Foto dari Galeri</button>
+        <button type="button" class="btn btn-ghost" id="scanBtnDirect">📄 Sudah Punya File Rapi (JPG/PNG/PDF)</button>
+        <button type="button" class="btn btn-ghost" id="scanBtnCancel">Batal</button>
+      </div>
+      <input type="file" id="scanFileCamera" accept="image/*" capture="environment" hidden>
+      <input type="file" id="scanFileGallery" accept="image/*" hidden>
+      <input type="file" id="scanFileDirect" accept=".jpg,.jpeg,.png,.pdf" hidden>
+    </div>
+
+    <div id="scanStepAdjust" class="scan-step" hidden>
+      <h3>Sesuaikan Sudut Dokumen</h3>
+      <p class="scan-hint">Geser 4 titik kuning ke tepi/sudut dokumen, lalu tekan "Gunakan Hasil Ini". Sistem akan otomatis meluruskan &amp; mempertajam warnanya seperti hasil scan.</p>
+      <div class="scan-canvas-wrap">
+        <canvas id="scanCanvas"></canvas>
+      </div>
+      <div class="scan-modal-actions">
+        <button type="button" class="btn btn-primary" id="scanBtnApply">✓ Gunakan Hasil Ini</button>
+        <button type="button" class="btn btn-ghost" id="scanBtnRetake">↺ Ambil Ulang Foto</button>
+        <button type="button" class="btn btn-ghost" id="scanBtnSkip">Lewati (pakai foto asli apa adanya)</button>
+      </div>
+    </div>
+
+  </div>
+</div>
 
 <div id="successScreen">
   <div class="badge">✓</div>
@@ -701,6 +760,236 @@
       }
     });
   });
+
+  // ---- Alat bantu foto dokumen (panduan + luruskan sudut + pertajam warna) ----
+  (function(){
+    const modal = document.getElementById('scanModal');
+    const stepGuide = document.getElementById('scanStepGuide');
+    const stepAdjust = document.getElementById('scanStepAdjust');
+    const scanCanvas = document.getElementById('scanCanvas');
+    const scanCtx = scanCanvas.getContext('2d');
+
+    let targetField = null;
+    let scanImg = null;
+    let corners = [];
+    let dragIdx = -1;
+    let displayScale = 1;
+
+    function assignFileToField(fieldName, file){
+      const input = form.querySelector('input[type=file][name="'+fieldName+'"]');
+      if(!input) return;
+      try {
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        input.files = dt.files;
+        input.dispatchEvent(new Event('change', {bubbles:true}));
+      } catch(err){
+        alert('Browser HP ini belum mendukung fitur foto terpandu. Coba pakai Chrome versi terbaru, atau pilih file secara manual.');
+      }
+    }
+
+    function openModal(fieldName){
+      targetField = fieldName;
+      stepGuide.hidden = false;
+      stepAdjust.hidden = true;
+      modal.hidden = false;
+    }
+    function closeModal(){
+      modal.hidden = true;
+      targetField = null;
+      scanImg = null;
+    }
+
+    document.querySelectorAll('.scan-trigger').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        const item = btn.closest('.upload-item');
+        openModal(item.dataset.field);
+      });
+    });
+    document.getElementById('scanBtnCancel').addEventListener('click', closeModal);
+
+    document.getElementById('scanBtnCamera').addEventListener('click', function(){ document.getElementById('scanFileCamera').click(); });
+    document.getElementById('scanBtnGallery').addEventListener('click', function(){ document.getElementById('scanFileGallery').click(); });
+    document.getElementById('scanBtnDirect').addEventListener('click', function(){ document.getElementById('scanFileDirect').click(); });
+
+    function loadImageForAdjust(file){
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = function(ev){
+        const img = new Image();
+        img.onload = function(){
+          scanImg = img;
+          showAdjustStep(img);
+        };
+        img.onerror = function(){
+          alert('Gagal membaca gambar. Coba ambil foto ulang.');
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+    document.getElementById('scanFileCamera').addEventListener('change', function(){
+      loadImageForAdjust(this.files[0]);
+      this.value = '';
+    });
+    document.getElementById('scanFileGallery').addEventListener('change', function(){
+      loadImageForAdjust(this.files[0]);
+      this.value = '';
+    });
+    document.getElementById('scanFileDirect').addEventListener('change', function(){
+      const file = this.files[0];
+      if(file) assignFileToField(targetField, file);
+      this.value = '';
+      closeModal();
+    });
+
+    function showAdjustStep(img){
+      stepGuide.hidden = true;
+      stepAdjust.hidden = false;
+
+      const maxW = Math.min(460, window.innerWidth - 64);
+      displayScale = Math.min(1, maxW / img.naturalWidth);
+      const dispW = Math.round(img.naturalWidth * displayScale);
+      const dispH = Math.round(img.naturalHeight * displayScale);
+      scanCanvas.width = dispW;
+      scanCanvas.height = dispH;
+
+      const insetX = dispW * 0.06, insetY = dispH * 0.06;
+      corners = [
+        {x:insetX, y:insetY},
+        {x:dispW-insetX, y:insetY},
+        {x:dispW-insetX, y:dispH-insetY},
+        {x:insetX, y:dispH-insetY},
+      ];
+      drawAdjustCanvas();
+    }
+
+    function drawAdjustCanvas(){
+      scanCtx.clearRect(0,0,scanCanvas.width,scanCanvas.height);
+      scanCtx.drawImage(scanImg, 0,0, scanCanvas.width, scanCanvas.height);
+      scanCtx.strokeStyle = '#F0B429';
+      scanCtx.lineWidth = 2.5;
+      scanCtx.beginPath();
+      corners.forEach(function(c,i){ i===0 ? scanCtx.moveTo(c.x,c.y) : scanCtx.lineTo(c.x,c.y); });
+      scanCtx.closePath();
+      scanCtx.stroke();
+      corners.forEach(function(c){
+        scanCtx.beginPath();
+        scanCtx.arc(c.x,c.y,13,0,Math.PI*2);
+        scanCtx.fillStyle = 'rgba(240,180,41,.35)';
+        scanCtx.fill();
+        scanCtx.beginPath();
+        scanCtx.arc(c.x,c.y,6,0,Math.PI*2);
+        scanCtx.fillStyle = '#F0B429';
+        scanCtx.fill();
+      });
+    }
+
+    function canvasPointFromEvent(e){
+      const rect = scanCanvas.getBoundingClientRect();
+      const scaleX = scanCanvas.width / rect.width;
+      const scaleY = scanCanvas.height / rect.height;
+      return { x:(e.clientX-rect.left)*scaleX, y:(e.clientY-rect.top)*scaleY };
+    }
+
+    scanCanvas.addEventListener('pointerdown', function(e){
+      const p = canvasPointFromEvent(e);
+      let closest = -1, closestDist = 36*36;
+      corners.forEach(function(c,i){
+        const d = (c.x-p.x)*(c.x-p.x) + (c.y-p.y)*(c.y-p.y);
+        if(d < closestDist){ closestDist = d; closest = i; }
+      });
+      if(closest >= 0){
+        dragIdx = closest;
+        scanCanvas.setPointerCapture(e.pointerId);
+        e.preventDefault();
+      }
+    });
+    scanCanvas.addEventListener('pointermove', function(e){
+      if(dragIdx < 0) return;
+      const p = canvasPointFromEvent(e);
+      corners[dragIdx] = {
+        x: Math.max(0, Math.min(scanCanvas.width, p.x)),
+        y: Math.max(0, Math.min(scanCanvas.height, p.y)),
+      };
+      drawAdjustCanvas();
+      e.preventDefault();
+    });
+    scanCanvas.addEventListener('pointerup', function(){ dragIdx = -1; });
+    scanCanvas.addEventListener('pointercancel', function(){ dragIdx = -1; });
+
+    // ---- Perspektif sederhana: bagi 4 sudut jadi 2 segitiga, warp affine tiap segitiga ----
+    function affineCoeffs(s0,s1,s2,d0,d1,d2){
+      const denom = s0.x*(s1.y-s2.y) + s1.x*(s2.y-s0.y) + s2.x*(s0.y-s1.y);
+      const a = (d0.x*(s1.y-s2.y) + d1.x*(s2.y-s0.y) + d2.x*(s0.y-s1.y)) / denom;
+      const b = (d0.y*(s1.y-s2.y) + d1.y*(s2.y-s0.y) + d2.y*(s0.y-s1.y)) / denom;
+      const c = (d0.x*(s2.x-s1.x) + d1.x*(s0.x-s2.x) + d2.x*(s1.x-s0.x)) / denom;
+      const d = (d0.y*(s2.x-s1.x) + d1.y*(s0.x-s2.x) + d2.y*(s1.x-s0.x)) / denom;
+      const e = (d0.x*(s1.x*s2.y-s2.x*s1.y) + d1.x*(s2.x*s0.y-s0.x*s2.y) + d2.x*(s0.x*s1.y-s1.x*s0.y)) / denom;
+      const f = (d0.y*(s1.x*s2.y-s2.x*s1.y) + d1.y*(s2.x*s0.y-s0.x*s2.y) + d2.y*(s0.x*s1.y-s1.x*s0.y)) / denom;
+      return [a,b,c,d,e,f];
+    }
+    function warpTriangle(ctx, img, s0,s1,s2, d0,d1,d2){
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(d0.x,d0.y); ctx.lineTo(d1.x,d1.y); ctx.lineTo(d2.x,d2.y);
+      ctx.closePath();
+      ctx.clip();
+      const m = affineCoeffs(s0,s1,s2,d0,d1,d2);
+      ctx.transform(m[0],m[1],m[2],m[3],m[4],m[5]);
+      ctx.drawImage(img, 0, 0);
+      ctx.restore();
+    }
+    function dist(p1,p2){ return Math.hypot(p1.x-p2.x, p1.y-p2.y); }
+
+    document.getElementById('scanBtnApply').addEventListener('click', function(){
+      const nat = corners.map(function(c){ return {x:c.x/displayScale, y:c.y/displayScale}; });
+      const TL = nat[0], TR = nat[1], BR = nat[2], BL = nat[3];
+
+      const outW = Math.max(200, Math.round((dist(TL,TR) + dist(BL,BR)) / 2));
+      const outH = Math.max(200, Math.round((dist(TL,BL) + dist(TR,BR)) / 2));
+
+      const outCanvas = document.createElement('canvas');
+      outCanvas.width = outW;
+      outCanvas.height = outH;
+      const outCtx = outCanvas.getContext('2d');
+
+      const dTL = {x:0,y:0}, dTR = {x:outW,y:0}, dBR = {x:outW,y:outH}, dBL = {x:0,y:outH};
+      warpTriangle(outCtx, scanImg, TL,TR,BL, dTL,dTR,dBL);
+      warpTriangle(outCtx, scanImg, TR,BR,BL, dTR,dBR,dBL);
+
+      // Pass ke-2: pertajam kontras/kecerahan/saturasi supaya mirip hasil scanner berwarna
+      const finalCanvas = document.createElement('canvas');
+      finalCanvas.width = outW;
+      finalCanvas.height = outH;
+      const finalCtx = finalCanvas.getContext('2d');
+      if('filter' in finalCtx){ finalCtx.filter = 'contrast(1.28) brightness(1.06) saturate(1.12)'; }
+      finalCtx.drawImage(outCanvas, 0, 0);
+
+      finalCanvas.toBlob(function(blob){
+        if(!blob){ alert('Gagal memproses foto. Coba ambil ulang.'); return; }
+        const file = new File([blob], (targetField||'dokumen') + '-scan.jpg', {type:'image/jpeg'});
+        assignFileToField(targetField, file);
+        closeModal();
+      }, 'image/jpeg', 0.92);
+    });
+
+    document.getElementById('scanBtnRetake').addEventListener('click', function(){
+      stepAdjust.hidden = true;
+      stepGuide.hidden = false;
+    });
+
+    document.getElementById('scanBtnSkip').addEventListener('click', function(){
+      const c = document.createElement('canvas');
+      c.width = scanImg.naturalWidth; c.height = scanImg.naturalHeight;
+      c.getContext('2d').drawImage(scanImg,0,0);
+      c.toBlob(function(blob){
+        const file = new File([blob], (targetField||'dokumen') + '.jpg', {type:'image/jpeg'});
+        assignFileToField(targetField, file);
+        closeModal();
+      }, 'image/jpeg', 0.92);
+    });
+  })();
 
   // ---- Signature pad ----
   const canvas = document.getElementById('sigPad');

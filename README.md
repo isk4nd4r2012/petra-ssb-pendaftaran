@@ -119,6 +119,19 @@ Orang tua isi index.html (5 langkah, di HP) - HANYA Nama Lengkap yang wajib
   link `?lanjut=KODE`. Kode ini pengacakan 5 karakter hex (~1 juta kombinasi)
   jadi sulit ditebak, tapi jangan disebar sembarangan (mis. jangan pernah post
   kode pendaftaran orang lain di grup publik).
+- **Alat bantu foto dokumen ("scan")**: khusus 6 field dokumen (Akte Lahir,
+  Ijazah/Raport, Kartu Keluarga, Raport Dalam, Bukti NISN, KIA — tidak
+  termasuk Pas Foto), tombol upload dibuka lewat modal panduan dulu (cahaya
+  tidak silau, tidak ada bayangan, tegak lurus di atas dokumen, seluruh
+  dokumen masuk layar, jangan blur), lalu orang tua bisa: ambil foto langsung,
+  pilih dari galeri, atau langsung pakai file JPG/PNG/PDF yang sudah rapi.
+  Untuk hasil foto/galeri, muncul layar "Sesuaikan Sudut Dokumen" — geser 4
+  titik ke tepi dokumen, sistem otomatis meluruskan (perspective warp 2
+  segitiga via `<canvas>`) dan mempertajam kontras/kecerahan/saturasi supaya
+  hasilnya mirip hasil scanner berwarna. Murni JavaScript di `index.html`
+  (tidak ada perubahan PHP/database) — file akhir tetap dikirim lewat
+  `submit.php` seperti biasa, jadi tidak ada langkah tambahan di server
+  selain upload ulang `index.html`.
 
 ### ⚠️ Wajib dilakukan di server setelah update ini
 

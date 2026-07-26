@@ -19,6 +19,7 @@ pendaftaran/
 ├── inc-cetak-dokumen.php     ← helper & template dokumen bersama (dipakai cetak.php & cetak-publik.php)
 ├── cetak.php                   ← cetak dokumen versi admin (perlu login), bisa 1 atau banyak (?ids=1,2,3)
 ├── cetak-publik.php              ← cetak dokumen versi orang tua sendiri, akses via kode_pendaftaran, tanpa login
+├── export-csv.php                  ← ekspor semua data pendaftar ke CSV (admin only)
 ├── config.sample.php               ← TEMPLATE kredensial — salin jadi config.php DI SERVER, isi nilai asli di sana saja
 ├── schema.sql                        ← struktur tabel database
 ├── assets/                             ← logo & thumbnail share medsos
@@ -177,11 +178,40 @@ Orang tua isi index.html (5 langkah, di HP) - HANYA Nama Lengkap yang wajib
   `inc-cetak-dokumen.php` utk menampilkan rincian biaya yang sesuai paket yang
   benar-benar dipilih di dokumen Formulir Pendaftaran cetak (bukan lagi
   angka statis Rp2.500.000 utk semua orang).
+- **Mode "Lengkapi Data (Pemain Lama)"**: toggle di bagian atas form (atau
+  link langsung `index.html?mode=lama` yang bisa dibagikan khusus ke pemain
+  lama). Saat aktif: warna tema form berubah (amber/emas, beda dari navy
+  form pendaftaran baru), judul & deskripsi header berubah, kartu "Pilih
+  Paket Pendaftaran" diganti kartu "Status Pembayaran Sebelumnya" (klaim
+  orang tua sendiri: Sudah Lunas / Belum Lunas — bukan status resmi admin,
+  cuma penanda utk admin follow-up soal kekurangan bayar). Semua langkah
+  lain (biodata, dokumen, persetujuan, tanda tangan) tetap sama — tujuannya
+  supaya data pemain yang tadinya cuma fotokopi kertas ikut terdigitalisasi.
+  Kolom baru: `jenis_pendaftar` ('Baru'/'Pemain Lama') dan `klaim_lunas_lama`.
+- **Konfirmasi pembayaran terintegrasi**: kartu baru di langkah 5 menampilkan
+  rekening resmi (BRI `108201012381536` a.n. **MITRA KOMPETISI / PT. Mitra
+  Sport Management**) + upload bukti transfer opsional (`file_bukti_transfer`,
+  kolom baru). Layar sukses menampilkan tombol WhatsApp yang otomatis
+  membuka chat ke Ibu Natalia (0812-4747-5924) dengan pesan berisi kode
+  pendaftaran & nominal. Kolom baru `status_pembayaran` ('Belum
+  Bayar'/'Menunggu Konfirmasi'/'Lunas') naik otomatis ke "Menunggu
+  Konfirmasi" begitu bukti transfer diupload, lalu admin yang tandai final
+  "Lunas" lewat `admin.php` setelah verifikasi manual (pola sama seperti
+  status materai — status "Lunas" tidak pernah diturunkan otomatis).
+- **Export data ke CSV**: tombol "📊 Export Data (CSV)" di `admin.php` →
+  `export-csv.php` (perlu login), mengunduh semua data pendaftar dalam satu
+  file CSV rapi (buka langsung di Excel/Sheets). Berguna sbg cadangan data
+  & bahan input manual ke sistem lain seperti SIAP PSSI, yang setahu kami
+  belum expose API publik utk klub kecil — jadi jembatan CSV ini jadi
+  langkah paling realistis utk sekarang. Kalau nanti PSSI ternyata punya
+  jalur integrasi resmi, itu bisa dibahas terpisah.
 
 ### ⚠️ Wajib dilakukan di server setelah update ini
 
 1. **Import ulang `schema.sql` lewat phpMyAdmin** (tab Import) — nambah
-   kolom `materai_status`, `paket_pendaftaran`, `nominal_kondisi_ekonomi`.
-   Aman, tidak menghapus data pendaftar yang sudah ada.
-2. Upload ulang `admin.php`, `inc-cetak-dokumen.php`, `index.html`, dan
-   `submit.php` (keempatnya berubah).
+   kolom `materai_status`, `paket_pendaftaran`, `nominal_kondisi_ekonomi`,
+   `file_bukti_transfer`, `jenis_pendaftar`, `klaim_lunas_lama`,
+   `status_pembayaran`. Aman, tidak menghapus data pendaftar yang sudah ada.
+2. Upload ulang `admin.php`, `inc-cetak-dokumen.php`, `index.html`,
+   `submit.php`, dan `ambil-data.php` (kelimanya berubah), plus **1 file
+   baru**: `export-csv.php`.

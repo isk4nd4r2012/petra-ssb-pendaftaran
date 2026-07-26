@@ -144,6 +144,35 @@ if (!empty($_SESSION['petra_admin']) && isset($_POST['toggle_materai_id'])) {
     }
 }
 
+// ---------- Update status pembayaran ----------
+if (!empty($_SESSION['petra_admin']) && isset($_POST['update_bayar_id'])) {
+    try {
+        $pdo = get_db();
+        $targetId = (int) $_POST['update_bayar_id'];
+        $statusBayar = in_array($_POST['status_pembayaran'] ?? '', ['Belum Bayar', 'Menunggu Konfirmasi', 'Lunas'], true)
+            ? $_POST['status_pembayaran'] : 'Belum Bayar';
+
+        $stmt = $pdo->prepare('UPDATE pendaftaran SET status_pembayaran = :s WHERE id = :id');
+        $stmt->execute(['s' => $statusBayar, 'id' => $targetId]);
+
+        try {
+            $log = $pdo->prepare('INSERT INTO admin_aktivitas_log (username, aksi, pendaftaran_id) VALUES (:u, :a, :id)');
+            $log->execute([
+                'u' => $_SESSION['petra_admin_user'] ?? '?',
+                'a' => 'Ubah status pembayaran pendaftar #' . $targetId . ' -> ' . $statusBayar,
+                'id' => $targetId,
+            ]);
+        } catch (Exception $e) {
+            // tabel admin_aktivitas_log belum ada - abaikan
+        }
+
+        header('Location: admin.php?updated=1');
+        exit;
+    } catch (Exception $e) {
+        $dbError = 'Gagal menyimpan status pembayaran. Kemungkinan kolom status_pembayaran belum ada (lihat schema.sql) atau server database sedang sibuk.';
+    }
+}
+
 // ---------- Kelola admin: tambah akun ----------
 $adminMgmtError = null;
 if (!empty($_SESSION['petra_admin']) && isset($_POST['add_admin_username'])) {
@@ -262,6 +291,10 @@ if ($pdo && !$connError) {
   .st-Ditolak{background:#FCEFEC; color:#D6242A;}
   .mt-Belum{background:#FCEFEC; color:#D6242A;}
   .mt-Sudah{background:#E4F3E9; color:#2F6B4F;}
+  .by-Belum-Bayar{background:#FCEFEC; color:#D6242A;}
+  .by-Menunggu-Konfirmasi{background:#FCE9D8; color:#D69A0C;}
+  .by-Lunas{background:#E4F3E9; color:#2F6B4F;}
+  .jp-lama{background:#F3E8D8; color:#8B5A1F;}
   form.materai-form{margin-top:10px; display:inline-block;}
   form.materai-form button{padding:6px 12px; border-radius:7px; font-size:12.5px; font-weight:600; border:1.5px solid #DCE1F0; background:#fff; color:#0F1F52;}
   .detail-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; font-size:13.5px;}
@@ -349,10 +382,13 @@ if ($pdo && !$connError) {
 
 <?php if (!empty($listError)): ?>
   <div class="empty" style="color:#D6242A;"><?= htmlspecialchars($listError) ?></div>
-<?php elseif ($rows): ?>
+<?php else: ?>
   <div class="bulk-bar">
-    <label><input type="checkbox" id="selectAll"> Pilih semua</label>
-    <button type="button" id="btnCetakTerpilih" disabled>🖨️ Cetak Terpilih (<span id="selCount">0</span>)</button>
+    <?php if ($rows): ?>
+      <label><input type="checkbox" id="selectAll"> Pilih semua</label>
+      <button type="button" id="btnCetakTerpilih" disabled>🖨️ Cetak Terpilih (<span id="selCount">0</span>)</button>
+    <?php endif; ?>
+    <a href="export-csv.php" style="margin-left:auto; background:#fff; border:1.5px solid #DCE1F0; color:#0F1F52; padding:7px 12px; border-radius:7px; font-size:12.5px; font-weight:600; text-decoration:none;">📊 Export Data (CSV)</a>
   </div>
 <?php endif; ?>
 
@@ -365,6 +401,11 @@ if ($pdo && !$connError) {
       <?= htmlspecialchars($r['nama_lengkap']) ?>
       <span class="status-pill st-<?= htmlspecialchars(str_replace(' ', '-', $r['status'])) ?>"><?= htmlspecialchars($r['status']) ?></span>
       <span class="status-pill mt-<?= ($r['materai_status'] ?? 'Belum') === 'Sudah' ? 'Sudah' : 'Belum' ?>">🖋 Materai: <?= ($r['materai_status'] ?? 'Belum') === 'Sudah' ? 'Sudah' : 'Belum' ?></span>
+      <?php $bayar = $r['status_pembayaran'] ?? 'Belum Bayar'; ?>
+      <span class="status-pill by-<?= htmlspecialchars(str_replace(' ', '-', $bayar)) ?>">💰 <?= htmlspecialchars($bayar) ?></span>
+      <?php if (($r['jenis_pendaftar'] ?? 'Baru') === 'Pemain Lama'): ?>
+        <span class="status-pill jp-lama">📋 Pemain Lama</span>
+      <?php endif; ?>
       <div class="meta"><?= htmlspecialchars($r['kode_pendaftaran']) ?> — <?= htmlspecialchars($r['tanggal_daftar']) ?></div>
     </summary>
 
@@ -377,17 +418,24 @@ if ($pdo && !$connError) {
       <div><b>HP Wali</b><?= htmlspecialchars($r['wali_hp'] ?? '-') ?></div>
       <div><b>Nama Ayah</b><?= htmlspecialchars($r['nama_ayah'] ?? '-') ?></div>
       <div><b>Nama Ibu</b><?= htmlspecialchars($r['nama_ibu'] ?? '-') ?></div>
-      <div>
-        <b>Paket Pendaftaran</b>
-        <?php
-        $paket = $r['paket_pendaftaran'] ?? 'Lunas';
-        $labelPaket = ['Lunas' => 'Lunas (Rp 2.500.000)', 'Binaan' => 'Binaan (Rp 500.000)', 'Kondisi Ekonomi' => 'Sesuai Kondisi Ekonomi'];
-        echo htmlspecialchars($labelPaket[$paket] ?? $paket);
-        if ($paket === 'Kondisi Ekonomi') {
-            echo ' — Rp ' . number_format((int)($r['nominal_kondisi_ekonomi'] ?? 0), 0, ',', '.');
-        }
-        ?>
-      </div>
+      <?php if (($r['jenis_pendaftar'] ?? 'Baru') === 'Pemain Lama'): ?>
+        <div>
+          <b>Klaim Pembayaran Lama</b>
+          <?= htmlspecialchars($r['klaim_lunas_lama'] ?? '-') ?>
+        </div>
+      <?php else: ?>
+        <div>
+          <b>Paket Pendaftaran</b>
+          <?php
+          $paket = $r['paket_pendaftaran'] ?? 'Lunas';
+          $labelPaket = ['Lunas' => 'Lunas (Rp 2.500.000)', 'Binaan' => 'Binaan (Rp 500.000)', 'Kondisi Ekonomi' => 'Sesuai Kondisi Ekonomi'];
+          echo htmlspecialchars($labelPaket[$paket] ?? $paket);
+          if ($paket === 'Kondisi Ekonomi') {
+              echo ' — Rp ' . number_format((int)($r['nominal_kondisi_ekonomi'] ?? 0), 0, ',', '.');
+          }
+          ?>
+        </div>
+      <?php endif; ?>
     </div>
 
     <div class="files">
@@ -396,7 +444,7 @@ if ($pdo && !$connError) {
         'file_akte_lahir' => 'Akte Lahir', 'file_ijazah_raport' => 'Ijazah/Raport',
         'file_kartu_keluarga' => 'Kartu Keluarga', 'file_raport_dalam' => 'Raport Dalam',
         'file_nisn' => 'NISN', 'file_kia' => 'KIA', 'file_pas_foto' => 'Pas Foto',
-        'file_tanda_tangan' => 'Tanda Tangan',
+        'file_tanda_tangan' => 'Tanda Tangan', 'file_bukti_transfer' => 'Bukti Transfer',
       ];
       foreach ($fileLabels as $field => $label):
         if (!empty($r[$field])):
@@ -432,6 +480,16 @@ if ($pdo && !$connError) {
       <?php else: ?>
         <button type="submit">🖋 Tandai Materai Sudah Ditempel</button>
       <?php endif; ?>
+    </form>
+
+    <form class="status-form" method="post" style="margin-top:8px;">
+      <input type="hidden" name="update_bayar_id" value="<?= (int)$r['id'] ?>">
+      <select name="status_pembayaran">
+        <?php foreach (['Belum Bayar','Menunggu Konfirmasi','Lunas'] as $sb): ?>
+          <option value="<?= $sb ?>" <?= ($r['status_pembayaran'] ?? 'Belum Bayar') === $sb ? 'selected' : '' ?>>💰 <?= $sb ?></option>
+        <?php endforeach; ?>
+      </select>
+      <button type="submit">Simpan Status Bayar</button>
     </form>
   </details>
 <?php endforeach; endif; ?>

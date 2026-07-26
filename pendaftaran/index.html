@@ -23,6 +23,14 @@
     --danger:#D6242A;
     --radius:14px;
   }
+  /* Tema alternatif utk mode "Lengkapi Data Pemain Lama" - beda kasat mata dari form pendaftaran baru */
+  body.mode-lama{
+    --pitch-900:#6B3F0E;
+    --pitch-700:#8B5A1F;
+    --pitch-500:#A9752E;
+    --cone-500:#2C56B8;
+    --cone-600:#1A3A8F;
+  }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
@@ -34,6 +42,15 @@
     padding-bottom:40px;
   }
   h1,h2,h3,legend{font-family:'Oswald',sans-serif; letter-spacing:.01em;}
+
+  /* ---------- Toggle mode (baru / lengkapi data pemain lama) ---------- */
+  .mode-tabs-wrap{background:var(--paper-100); padding:10px 16px; border-bottom:1px solid var(--line-200);}
+  .mode-tabs{display:flex; gap:8px; max-width:640px; margin:0 auto;}
+  .mode-tab-btn{
+    flex:1; padding:9px 8px; border-radius:9px; font-size:12.5px; font-weight:600;
+    border:1.5px solid var(--line-200); background:#fff; color:var(--ink-600); cursor:pointer;
+  }
+  .mode-tab-btn.active{background:var(--pitch-900); border-color:var(--pitch-900); color:#fff;}
 
   /* ---------- Header / pitch stripe ---------- */
   .field-header{
@@ -199,6 +216,11 @@
   .field.invalid input,.field.invalid select,.field.invalid textarea{border-color:var(--danger); background:#FCF3F1;}
   .field.invalid .error-msg{display:block;}
 
+  .bank-info{background:var(--paper-0); border:1px solid var(--line-200); border-radius:10px; padding:10px 12px;}
+  .bank-info-row{display:flex; justify-content:space-between; gap:10px; font-size:13px; padding:4px 0;}
+  .bank-info-row b{color:var(--ink-600); font-weight:600;}
+  .bank-info-row span{font-weight:700; color:var(--pitch-900); text-align:right;}
+
   .paket-list{display:flex; flex-direction:column; gap:10px;}
   .paket-card{
     display:block; border:1.5px solid var(--line-200); border-radius:12px; padding:14px;
@@ -267,10 +289,17 @@
 </head>
 <body>
 
+<div class="mode-tabs-wrap">
+  <div class="mode-tabs">
+    <button type="button" class="mode-tab-btn active" data-form-mode="baru">🆕 Daftar Baru</button>
+    <button type="button" class="mode-tab-btn" data-form-mode="lama">📋 Lengkapi Data (Pemain Lama)</button>
+  </div>
+</div>
+
 <div class="field-header">
   <span class="crest"><img src="assets/petra-logo.png" alt="Logo PETRA Football Club"></span>
-  <h1>Formulir Pendaftaran Siswa</h1>
-  <p>Sekolah Sepakbola PETRA — Sentani, Papua. Isi seluruh data di bawah ini, lampirkan dokumen yang diminta, lalu kirim langsung dari HP Anda.</p>
+  <h1 id="fieldHeaderTitle">Formulir Pendaftaran Siswa</h1>
+  <p id="fieldHeaderDesc">Sekolah Sepakbola PETRA — Sentani, Papua. Isi seluruh data di bawah ini, lampirkan dokumen yang diminta, lalu kirim langsung dari HP Anda.</p>
 </div>
 
 <div class="progress-wrap">
@@ -598,7 +627,9 @@
     <div class="step-eyebrow"><span class="step-num">5</span><h2>Periksa &amp; Kirim</h2></div>
     <p class="step-desc">Pastikan data sudah benar sebelum dikirim.</p>
 
-    <div class="card">
+    <input type="hidden" name="jenis_pendaftar" id="jenisPendaftarInput" value="Baru">
+
+    <div class="card" id="paketPendaftaranCard">
       <h3>Pilih Paket Pendaftaran</h3>
       <div class="paket-list">
         <label class="paket-card">
@@ -629,6 +660,33 @@
           <p style="font-size:12.5px; color:var(--ink-600); margin:6px 0 8px;">Tuliskan nominal yang Anda sanggupi.</p>
           <input type="number" name="nominal_kondisi_ekonomi" id="nominalKondisiEkonomi" placeholder="Contoh: 250000" inputmode="numeric" min="0" disabled>
         </label>
+      </div>
+    </div>
+
+    <div class="card" id="statusLamaCard" hidden>
+      <h3>Status Pembayaran Sebelumnya</h3>
+      <p style="font-size:12.5px; color:var(--ink-600); margin:0 0 10px;">Karena Anda sudah terdaftar sebelumnya secara manual, tidak ada biaya pendaftaran baru di sini — cukup pilih status pembayaran lama Anda. Kalau masih ada kekurangan, admin akan menghubungi untuk tindak lanjut pelunasan.</p>
+      <div class="radio-group">
+        <label class="radio-chip"><input type="radio" name="klaim_lunas_lama" value="Sudah Lunas" checked><span>✅ Sudah Lunas</span></label>
+        <label class="radio-chip"><input type="radio" name="klaim_lunas_lama" value="Belum Lunas"><span>🕒 Belum Lunas</span></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Konfirmasi Pembayaran</h3>
+      <div class="bank-info">
+        <div class="bank-info-row"><b>Bank</b><span>BRI</span></div>
+        <div class="bank-info-row"><b>No. Rekening</b><span>108201012381536</span></div>
+        <div class="bank-info-row"><b>Atas Nama</b><span>MITRA KOMPETISI (PT. Mitra Sport Management)</span></div>
+      </div>
+      <p class="hint" style="margin:10px 0 14px;">Transfer sesuai Total Bayar di atas, lalu opsional lampirkan bukti transfer di bawah — atau kirim lewat WhatsApp/email setelah pendaftaran terkirim.</p>
+      <div class="upload-item" data-field="file_bukti_transfer">
+        <div class="up-top">
+          <div><div class="up-title">Bukti Transfer <span class="opt">opsional</span></div><div class="up-note">Screenshot/foto struk transfer</div></div>
+          <div class="up-status" hidden>✓ Terpasang</div>
+        </div>
+        <label class="upload-btn">📎 Pilih File<input type="file" name="file_bukti_transfer" accept=".jpg,.jpeg,.png,.pdf"></label>
+        <div class="file-name"></div>
       </div>
     </div>
 
@@ -708,6 +766,8 @@
     <button type="button" id="btnCopyLink">📋 Salin Link</button>
   </div>
 
+  <a id="waConfirmBtn" class="btn btn-primary" style="display:block; text-decoration:none; margin-bottom:14px;" target="_blank">💬 Konfirmasi Transfer via WhatsApp</a>
+
   <div id="printBox">
     <a id="printSemua" class="btn btn-primary" target="_blank">🖨️ Cetak Semua Dokumen</a>
     <a id="printFormulir" class="btn btn-ghost" target="_blank">Cetak Formulir Pendaftaran</a>
@@ -727,9 +787,40 @@
   let current = 1;
   let sigMode = 'draw'; // 'draw' (gambar di layar) atau 'upload' (foto/scan tanda tangan)
   let uploadedSigDataUrl = null;
+  let formMode = 'baru'; // 'baru' (daftar baru) atau 'lama' (lengkapi data pemain lama)
   const form = document.getElementById('regForm');
   const track = document.getElementById('progressTrack');
   const stepTitles = {1:'Data Siswa',2:'Orang Tua',3:'Dokumen',4:'Pernyataan',5:'Kirim'};
+
+  // ---- Mode: Daftar Baru vs Lengkapi Data Pemain Lama ----
+  function setFormMode(mode){
+    formMode = (mode === 'lama') ? 'lama' : 'baru';
+    document.body.classList.toggle('mode-lama', formMode === 'lama');
+    document.querySelectorAll('.mode-tab-btn').forEach(function(btn){
+      btn.classList.toggle('active', btn.dataset.formMode === formMode);
+    });
+    document.getElementById('jenisPendaftarInput').value = (formMode === 'lama') ? 'Pemain Lama' : 'Baru';
+
+    if(formMode === 'lama'){
+      document.getElementById('fieldHeaderTitle').textContent = 'Lengkapi Data Digital Pemain';
+      document.getElementById('fieldHeaderDesc').textContent = 'Untuk pemain/siswa yang sudah terdaftar sebelumnya (secara fisik/manual) di SSB PETRA Sentani. Lengkapi data Anda menjadi data digital resmi di sistem kami.';
+      document.getElementById('paketPendaftaranCard').hidden = true;
+      document.getElementById('statusLamaCard').hidden = false;
+    } else {
+      document.getElementById('fieldHeaderTitle').textContent = 'Formulir Pendaftaran Siswa';
+      document.getElementById('fieldHeaderDesc').textContent = 'Sekolah Sepakbola PETRA — Sentani, Papua. Isi seluruh data di bawah ini, lampirkan dokumen yang diminta, lalu kirim langsung dari HP Anda.';
+      document.getElementById('paketPendaftaranCard').hidden = false;
+      document.getElementById('statusLamaCard').hidden = true;
+    }
+    updateBiayaBox();
+  }
+  document.querySelectorAll('.mode-tab-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){ setFormMode(btn.dataset.formMode); });
+  });
+  (function initFormModeFromUrl(){
+    const params = new URLSearchParams(location.search);
+    if(params.get('mode') === 'lama') setFormMode('lama');
+  })();
 
   for(let i=1;i<=totalSteps;i++){
     const seg = document.createElement('div');
@@ -1198,9 +1289,18 @@
   }
 
   function updateBiayaBox(){
+    const nominalInput = document.getElementById('nominalKondisiEkonomi');
+
+    if(formMode === 'lama'){
+      nominalInput.disabled = true;
+      document.getElementById('biayaLabel').textContent = 'Biaya (Lengkapi Data Pemain Lama)';
+      document.getElementById('biayaPokok').textContent = formatRupiah(0);
+      document.getElementById('totalBayar').textContent = formatRupiah(MATERAI_FEE);
+      return;
+    }
+
     const checked = form.querySelector('input[name="paket_pendaftaran"]:checked');
     const paket = checked ? checked.value : 'Lunas';
-    const nominalInput = document.getElementById('nominalKondisiEkonomi');
     nominalInput.disabled = (paket !== 'Kondisi Ekonomi');
 
     const pokok = (paket === 'Kondisi Ekonomi') ? (Number(nominalInput.value) || 0) : (PAKET_HARGA[paket] || 0);
@@ -1271,6 +1371,14 @@
         document.getElementById('printPernyataan').href = base + '&jenis=pernyataan';
         document.getElementById('printAmatir').href = base + '&jenis=amatir';
 
+        const totalText = document.getElementById('totalBayar').textContent;
+        const labelText = document.getElementById('biayaLabel').textContent;
+        const waMsg = 'Halo Ibu Natalia, saya sudah transfer untuk pendaftaran SSB PETRA Sentani.\n'
+          + 'Kode Pendaftaran: ' + json.kode + '\n'
+          + labelText + ' - Total: ' + totalText + '\n'
+          + 'Mohon dikonfirmasi. Terima kasih.';
+        document.getElementById('waConfirmBtn').href = 'https://wa.me/6281247475924?text=' + encodeURIComponent(waMsg);
+
         if(!json.lengkap){
           document.getElementById('successTitle').textContent = 'Pendaftaran Tersimpan (Belum Lengkap)';
           document.getElementById('successDesc').textContent = 'Data yang sudah diisi berhasil disimpan. Lengkapi sisanya kapan saja lewat link di bawah - data tidak akan hilang.';
@@ -1303,6 +1411,8 @@
 
   // ---- Lanjutkan pendaftaran yang sudah ada (?lanjut=KODE) ----
   function isiUlangForm(data, sudahAda){
+    setFormMode(data.jenis_pendaftar === 'Pemain Lama' ? 'lama' : 'baru');
+
     Object.keys(data).forEach(function(key){
       const els = form.querySelectorAll('[name="'+key+'"]');
       if(!els.length) return;

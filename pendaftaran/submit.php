@@ -69,9 +69,14 @@ $data = [
     'setuju_perjanjian_amatir' => !empty($_POST['setuju_perjanjian_amatir']) ? 1 : 0,
 
     'paket_pendaftaran'         => in_array(s('paket_pendaftaran'), ['Lunas', 'Binaan', 'Kondisi Ekonomi'], true) ? s('paket_pendaftaran') : 'Lunas',
+
+    'jenis_pendaftar'           => (s('jenis_pendaftar') === 'Pemain Lama') ? 'Pemain Lama' : 'Baru',
 ];
 $data['nominal_kondisi_ekonomi'] = ($data['paket_pendaftaran'] === 'Kondisi Ekonomi' && is_numeric($_POST['nominal_kondisi_ekonomi'] ?? null))
     ? (int) $_POST['nominal_kondisi_ekonomi']
+    : null;
+$data['klaim_lunas_lama'] = ($data['jenis_pendaftar'] === 'Pemain Lama' && in_array(s('klaim_lunas_lama'), ['Sudah Lunas', 'Belum Lunas'], true))
+    ? s('klaim_lunas_lama')
     : null;
 
 // ---------- Satu-satunya field yang benar-benar wajib ----------
@@ -126,13 +131,15 @@ function save_upload($fieldName, $folder, $kode) {
 
 $fileFields = [
     'file_akte_lahir', 'file_ijazah_raport', 'file_kartu_keluarga',
-    'file_raport_dalam', 'file_nisn', 'file_kia', 'file_pas_foto',
+    'file_raport_dalam', 'file_nisn', 'file_kia', 'file_pas_foto', 'file_bukti_transfer',
 ];
 $savedFiles = [];
+$buktiTransferBaru = false;
 foreach ($fileFields as $f) {
     $new = save_upload($f, $folder, $kode);
     if ($new !== null) {
         $savedFiles[$f] = $new; // file baru diupload sekarang
+        if ($f === 'file_bukti_transfer') $buktiTransferBaru = true;
     } elseif ($existing && !empty($existing[$f])) {
         $savedFiles[$f] = $existing[$f]; // pertahankan file lama, jangan dihapus krn tidak diupload ulang
     } else {
@@ -180,6 +187,14 @@ if ($existing) {
     $statusBaru = $lengkap ? 'Baru' : 'Menunggu Kelengkapan';
 }
 
+// ---------- Status pembayaran: naik ke "Menunggu Konfirmasi" begitu bukti
+// transfer diupload, tapi jangan turunkan status "Lunas" yang sudah
+// dikonfirmasi admin sebelumnya hanya krn ada pembaruan data lain. ----------
+$statusBayarBaru = $existing['status_pembayaran'] ?? 'Belum Bayar';
+if ($buktiTransferBaru && $statusBayarBaru !== 'Lunas') {
+    $statusBayarBaru = 'Menunggu Konfirmasi';
+}
+
 // ---------- Simpan ke database (insert baru / update lanjutan) ----------
 try {
     $pdo = get_db();
@@ -188,17 +203,19 @@ try {
         $cols = array_unique(array_merge(array_keys($data), array_keys($savedFiles)));
         $setParts = array_map(fn($c) => "$c = :$c", $cols);
         $setParts[] = 'status = :status_baru';
+        $setParts[] = 'status_pembayaran = :status_bayar_baru';
         $sql = 'UPDATE pendaftaran SET ' . implode(', ', $setParts) . ' WHERE kode_pendaftaran = :kode_where';
         $stmt = $pdo->prepare($sql);
         foreach ($cols as $c) {
             $stmt->bindValue(':' . $c, array_key_exists($c, $data) ? $data[$c] : ($savedFiles[$c] ?? null));
         }
         $stmt->bindValue(':status_baru', $statusBaru);
+        $stmt->bindValue(':status_bayar_baru', $statusBayarBaru);
         $stmt->bindValue(':kode_where', $kode);
         $stmt->execute();
     } else {
         $cols = array_merge(
-            ['kode_pendaftaran', 'status'],
+            ['kode_pendaftaran', 'status', 'status_pembayaran'],
             array_keys($data),
             array_keys($savedFiles),
             ['ip_pendaftar']
@@ -206,7 +223,7 @@ try {
         $cols = array_unique($cols);
 
         $values = array_merge(
-            ['kode_pendaftaran' => $kode, 'status' => $statusBaru],
+            ['kode_pendaftaran' => $kode, 'status' => $statusBaru, 'status_pembayaran' => $statusBayarBaru],
             $data,
             $savedFiles,
             ['ip_pendaftar' => $_SERVER['REMOTE_ADDR'] ?? null]
@@ -230,9 +247,10 @@ try {
 // supaya admin tidak dibanjiri email tiap kali ada penyuntingan kecil.
 $shouldEmail = !$existing || ($existing['status'] === 'Menunggu Kelengkapan' && $statusBaru === 'Baru');
 if ($shouldEmail) {
-    $subject = ($lengkap ? 'Pendaftaran Baru (Lengkap)' : 'Pendaftaran Baru (Belum Lengkap)')
+    $jenisLabel = $data['jenis_pendaftar'] === 'Pemain Lama' ? 'Lengkapi Data Pemain Lama' : 'Pendaftaran Baru';
+    $subject = "$jenisLabel (" . ($lengkap ? 'Lengkap' : 'Belum Lengkap') . ')'
         . ' SSB PETRA — ' . $data['nama_lengkap'] . ' (' . $kode . ')';
-    $body = "Ada pendaftaran masuk:\n\n"
+    $body = "Ada data masuk ($jenisLabel):\n\n"
         . "Kode: $kode\n"
         . "Status: $statusBaru\n"
         . "Nama Siswa: {$data['nama_lengkap']}\n"

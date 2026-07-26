@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS pendaftaran (
     file_kia VARCHAR(255),
     file_pas_foto VARCHAR(255),
     file_tanda_tangan VARCHAR(255),
+    file_bukti_transfer VARCHAR(255),
 
     status ENUM('Menunggu Kelengkapan','Baru','Diverifikasi','Diterima','Ditolak') NOT NULL DEFAULT 'Menunggu Kelengkapan',
     catatan_admin TEXT,
@@ -66,9 +67,18 @@ CREATE TABLE IF NOT EXISTS pendaftaran (
     -- ditempel manual oleh admin per pendaftar, di luar sistem ini)
     materai_status ENUM('Belum','Sudah') NOT NULL DEFAULT 'Belum',
 
-    -- Paket pendaftaran yang dipilih di form
+    -- Paket pendaftaran yang dipilih di form (hanya relevan utk jenis_pendaftar = 'Baru')
     paket_pendaftaran ENUM('Lunas','Binaan','Kondisi Ekonomi') NOT NULL DEFAULT 'Lunas',
     nominal_kondisi_ekonomi DECIMAL(12,0) NULL,
+
+    -- Pendaftaran baru vs pemain lama yang melengkapi data digital
+    jenis_pendaftar ENUM('Baru','Pemain Lama') NOT NULL DEFAULT 'Baru',
+    -- klaim ORANG TUA sendiri soal lunas/belum riwayat bayar lama (bukan status resmi admin)
+    klaim_lunas_lama ENUM('Sudah Lunas','Belum Lunas') NULL,
+
+    -- Status pembayaran resmi yg dikontrol admin (Belum Bayar -> Menunggu
+    -- Konfirmasi setelah bukti transfer diupload -> Lunas setelah diverifikasi admin)
+    status_pembayaran ENUM('Belum Bayar','Menunggu Konfirmasi','Lunas') NOT NULL DEFAULT 'Belum Bayar',
 
     ip_pendaftar VARCHAR(45)
 );
@@ -81,6 +91,10 @@ ALTER TABLE pendaftaran MODIFY COLUMN status ENUM('Menunggu Kelengkapan','Baru',
 ALTER TABLE pendaftaran ADD COLUMN IF NOT EXISTS materai_status ENUM('Belum','Sudah') NOT NULL DEFAULT 'Belum';
 ALTER TABLE pendaftaran ADD COLUMN IF NOT EXISTS paket_pendaftaran ENUM('Lunas','Binaan','Kondisi Ekonomi') NOT NULL DEFAULT 'Lunas';
 ALTER TABLE pendaftaran ADD COLUMN IF NOT EXISTS nominal_kondisi_ekonomi DECIMAL(12,0) NULL;
+ALTER TABLE pendaftaran ADD COLUMN IF NOT EXISTS file_bukti_transfer VARCHAR(255) NULL;
+ALTER TABLE pendaftaran ADD COLUMN IF NOT EXISTS jenis_pendaftar ENUM('Baru','Pemain Lama') NOT NULL DEFAULT 'Baru';
+ALTER TABLE pendaftaran ADD COLUMN IF NOT EXISTS klaim_lunas_lama ENUM('Sudah Lunas','Belum Lunas') NULL;
+ALTER TABLE pendaftaran ADD COLUMN IF NOT EXISTS status_pembayaran ENUM('Belum Bayar','Menunggu Konfirmasi','Lunas') NOT NULL DEFAULT 'Belum Bayar';
 
 -- Akun admin (multi-user) untuk login ke admin.php.
 -- ADMIN_USERNAME/ADMIN_PASSWORD di config.php tetap berfungsi sbg akun

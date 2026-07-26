@@ -37,6 +37,7 @@ if (!$r) {
 $fileFields = [
     'file_akte_lahir', 'file_ijazah_raport', 'file_kartu_keluarga',
     'file_raport_dalam', 'file_nisn', 'file_kia', 'file_pas_foto', 'file_tanda_tangan',
+    'file_bukti_transfer',
 ];
 $sudahAda = [];
 foreach ($fileFields as $f) {

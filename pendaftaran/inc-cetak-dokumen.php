@@ -26,6 +26,22 @@ function ttl($tempat, $tgl) {
 // ---- kotak biaya, sesuai paket pendaftaran yang benar-benar dipilih ----
 function render_biaya_box($r) {
     $materai = 15000;
+
+    if (($r['jenis_pendaftar'] ?? 'Baru') === 'Pemain Lama') {
+        $klaim = $r['klaim_lunas_lama'] ?? '-';
+        ob_start(); ?>
+        <div class="biaya-box">
+          <b>Biaya (Lengkapi Data Pemain Lama): Rp 0,-</b>
+          <ul>
+            <li>Tidak ada biaya pendaftaran baru — sudah terdaftar sebelumnya secara manual</li>
+            <li>Materai Dokumen Resmi (Surat Persetujuan Data Pribadi): Rp 15.000,-</li>
+          </ul>
+          <p style="margin:6px 0 0; font-style:italic; font-size:11pt;">Klaim status pembayaran pendaftaran lama (oleh orang tua/wali): <?= htmlspecialchars($klaim) ?>.</p>
+          <p style="margin-top:8px;"><b>Total Bayar: Rp <?= number_format($materai, 0, ',', '.') ?>,-</b></p>
+        </div>
+        <?php return ob_get_clean();
+    }
+
     $paket = $r['paket_pendaftaran'] ?? 'Lunas';
 
     if ($paket === 'Binaan') {

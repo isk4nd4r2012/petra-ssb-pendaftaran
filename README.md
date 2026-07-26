@@ -45,11 +45,13 @@ Orang tua isi index.html (5 langkah, di HP)
 
 ## Isu yang diketahui / belum selesai
 
-- **`petrafc.com/daftar` (tanpa trailing slash / `/index.php`) masih 404** —
-  kemungkinan besar tertangkap oleh rewrite WordPress di root `.htaccess`
-  situs utama. Solusi sementara: pakai `petrafc.com/daftar/index.php` (sudah
-  jalan, sudah dipakai untuk share). Perbaikan permanen perlu melihat isi
-  root `.htaccess` di `public_html` (di luar repo ini) — backup dulu sebelum ubah.
+- ~~`petrafc.com/daftar` (tanpa trailing slash / `/index.php`) 404~~ —
+  **sudah dicek ulang (2026-07) dan TIDAK terjadi lagi**: root `public_html`
+  ternyata tidak punya `.htaccess` sama sekali (situs ini bukan WordPress),
+  jadi dugaan lama soal rewrite WordPress tidak relevan. Akses langsung ke
+  `petrafc.com/daftar` sekarang otomatis masuk ke formulir pendaftaran.
+  Kalau suatu saat 404 muncul lagi, kemungkinan penyebabnya bukan `.htaccess`
+  tapi konfigurasi lain di sisi Hostinger (perlu ditelusuri ulang).
 - **Field alamat siswa terpisah dari alamat orang tua** — dokumen cetak
   (`cetak.php`) saat ini pakai alamat ayah → ibu → wali sbg fallback karena
   form tidak mengumpulkan alamat siswa secara terpisah. Perlu keputusan:

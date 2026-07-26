@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS pendaftaran (
     nama_panggilan VARCHAR(100),
     nik_siswa VARCHAR(20),
     nisn VARCHAR(20),
-    jenis_kelamin ENUM('Laki-laki','Perempuan') NOT NULL,
+    jenis_kelamin ENUM('Laki-laki','Perempuan') NULL,
     tempat_lahir VARCHAR(100),
     tanggal_lahir DATE,
     pendidikan VARCHAR(100),
@@ -59,11 +59,17 @@ CREATE TABLE IF NOT EXISTS pendaftaran (
     file_pas_foto VARCHAR(255),
     file_tanda_tangan VARCHAR(255),
 
-    status ENUM('Baru','Diverifikasi','Diterima','Ditolak') NOT NULL DEFAULT 'Baru',
+    status ENUM('Menunggu Kelengkapan','Baru','Diverifikasi','Diterima','Ditolak') NOT NULL DEFAULT 'Menunggu Kelengkapan',
     catatan_admin TEXT,
 
     ip_pendaftar VARCHAR(45)
 );
+
+-- Perbarui kolom di instalasi lama yang tabel `pendaftaran`-nya sudah ada
+-- sebelum perubahan ini (CREATE TABLE di atas dilewati krn IF NOT EXISTS).
+-- Aman dijalankan berulang kali - tidak menghapus/mengubah data yang sudah ada.
+ALTER TABLE pendaftaran MODIFY COLUMN jenis_kelamin ENUM('Laki-laki','Perempuan') NULL;
+ALTER TABLE pendaftaran MODIFY COLUMN status ENUM('Menunggu Kelengkapan','Baru','Diverifikasi','Diterima','Ditolak') NOT NULL DEFAULT 'Menunggu Kelengkapan';
 
 -- Akun admin (multi-user) untuk login ke admin.php.
 -- ADMIN_USERNAME/ADMIN_PASSWORD di config.php tetap berfungsi sbg akun

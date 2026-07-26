@@ -13,13 +13,16 @@ daftar/
 └── index.php          ← halaman shortlink + share-preview (redirect + Open Graph meta)
 pendaftaran/
 ├── index.html          ← formulir yang diisi calon siswa/ortu (5 langkah)
-├── submit.php           ← backend penerima submit form
-├── admin.php             ← panel admin (login, lihat pendaftar, ubah status)
-├── cetak.php               ← generator 4 dokumen resmi siap cetak (F4)
-├── config.sample.php         ← TEMPLATE kredensial — salin jadi config.php DI SERVER, isi nilai asli di sana saja
-├── schema.sql                  ← struktur tabel database
-├── assets/                       ← logo & thumbnail share medsos
-└── uploads/                        ← 1 folder per pendaftar (upload dokumen + tanda tangan) — isi asli TIDAK ada di repo ini
+├── submit.php           ← backend penerima submit form (insert baru / lanjutkan yg sudah ada)
+├── ambil-data.php        ← API kecil: ambil ulang data pendaftaran (utk mode "lanjutkan")
+├── admin.php               ← panel admin (login, lihat pendaftar, ubah status)
+├── inc-cetak-dokumen.php     ← helper & template dokumen bersama (dipakai cetak.php & cetak-publik.php)
+├── cetak.php                   ← cetak dokumen versi admin (perlu login), bisa 1 atau banyak (?ids=1,2,3)
+├── cetak-publik.php              ← cetak dokumen versi orang tua sendiri, akses via kode_pendaftaran, tanpa login
+├── config.sample.php               ← TEMPLATE kredensial — salin jadi config.php DI SERVER, isi nilai asli di sana saja
+├── schema.sql                        ← struktur tabel database
+├── assets/                             ← logo & thumbnail share medsos
+└── uploads/                              ← 1 folder per pendaftar (upload dokumen + tanda tangan) — isi asli TIDAK ada di repo ini
 ```
 
 Lihat `pendaftaran/README.md` untuk detail langkah pasang di Hostinger.
@@ -36,11 +39,21 @@ segera diganti (`DB_PASS`, `ADMIN_PASSWORD`).
 ## Alur data
 
 ```
-Orang tua isi index.html (5 langkah, di HP)
-   → submit.php: validasi → simpan file & tanda tangan ke uploads/{kode}/
-        → INSERT ke tabel pendaftaran → email notifikasi ke admin
-   → admin.php (login): lihat semua pendaftar, unduh dokumen, ubah status
-        → cetak.php: render 4 dokumen resmi siap cetak (F4), data + ttd otomatis
+Orang tua isi index.html (5 langkah, di HP) - HANYA Nama Lengkap yang wajib
+   → submit.php: simpan apa adanya (lengkap atau belum) → simpan file & tanda
+        tangan yang ADA ke uploads/{kode}/ → INSERT/UPDATE ke tabel pendaftaran
+        → status = "Menunggu Kelengkapan" (belum lengkap) atau "Baru" (lengkap)
+        → email admin (hanya saat baru dibuat / baru selesai jadi lengkap)
+   → Kalau belum lengkap: layar sukses kasih link "?lanjut=KODE" utk
+        melengkapi lagi kapan saja - buka lagi form yg sama, otomatis terisi
+        data sebelumnya (ambil-data.php), file yang sudah ada tidak perlu
+        diupload ulang.
+   → Orang tua juga bisa cetak dokumennya sendiri kapan saja lewat
+        cetak-publik.php?kode=KODE (tanpa perlu login admin).
+   → admin.php (login): lihat semua pendaftar (termasuk yg blm lengkap),
+        unduh dokumen, tulis catatan (mis. "lengkapi X"), ubah status
+        → cetak.php: sama seperti cetak-publik.php tapi versi admin,
+          bisa banyak pendaftar sekaligus (checkbox "Cetak Terpilih")
 ```
 
 ## Isu yang diketahui / belum selesai
@@ -88,13 +101,32 @@ Orang tua isi index.html (5 langkah, di HP)
   "Simpan sebagai PDF" satu kali untuk semua. Link cetak satu-per-satu yang
   lama (`cetak.php?id=...`) tetap berfungsi seperti biasa.
 
+- **Pendaftaran bisa dilengkapi belakangan**: hanya "Nama Lengkap" siswa yang
+  benar-benar wajib diisi utk mengirim form. Field lain (jenis kelamin, data
+  wali, upload dokumen, persetujuan, tanda tangan) boleh kosong/salah dulu —
+  status pendaftaran otomatis "Menunggu Kelengkapan" sampai semua bagian
+  penting terisi, baru berubah jadi "Baru" (siap ditinjau admin). Orang tua
+  dapat link unik `index.html?lanjut=KODE` di layar sukses utk buka lagi form
+  yg sama, otomatis terisi data sebelumnya, tanpa perlu mengulang dari nol.
+  Catatan admin (`catatan_admin`) ikut ditampilkan sbg banner ke orang tua saat
+  mereka membuka link ini, jadi bisa dipakai admin utk minta perbaikan data
+  spesifik.
+- **Cetak mandiri utk orang tua**: `cetak-publik.php?kode=KODE&jenis=...` —
+  versi `cetak.php` tanpa perlu login admin, cukup dgn kode pendaftaran milik
+  sendiri. Muncul otomatis sbg tombol di layar sukses setelah submit.
+  ⚠️ **Model keamanan**: siapa pun yang tahu `kode_pendaftaran` (mis.
+  `SP2607-1F27B`) bisa membuka/cetak dokumen tsb tanpa password — sama seperti
+  link `?lanjut=KODE`. Kode ini pengacakan 5 karakter hex (~1 juta kombinasi)
+  jadi sulit ditebak, tapi jangan disebar sembarangan (mis. jangan pernah post
+  kode pendaftaran orang lain di grup publik).
+
 ### ⚠️ Wajib dilakukan di server setelah update ini
 
-`schema.sql` bertambah 3 tabel baru (`admin_users`, `admin_login_log`,
-`admin_aktivitas_log`). **Import ulang `schema.sql` lewat phpMyAdmin**
-(tab Import, `CREATE TABLE IF NOT EXISTS` — aman, tidak akan menghapus data
-pendaftar yang sudah ada) supaya fitur multi-admin, rate limiting, dan log
-aktivitas aktif. Selama tabel-tabel ini belum diimport, login lama
-(`ADMIN_USERNAME`/`ADMIN_PASSWORD` di `config.php`) tetap berfungsi seperti
-biasa — hanya menu "Kelola Akun Admin"/"Log Aktivitas" yang akan menampilkan
-pesan bahwa tabelnya belum tersedia.
+1. **Import ulang `schema.sql` lewat phpMyAdmin** (tab Import) — ada
+   penyesuaian kolom `status` (tambah nilai `Menunggu Kelengkapan`) dan
+   `jenis_kelamin` (kini boleh kosong), plus 3 tabel admin dari update
+   sebelumnya. Aman, tidak menghapus data pendaftar yang sudah ada.
+2. Upload semua file PHP yang berubah, termasuk **2 file baru**:
+   `ambil-data.php`, `inc-cetak-dokumen.php`, `cetak-publik.php` — pastikan
+   ikut diupload ke folder `pendaftaran/` di server (bukan cuma file yg sudah
+   ada sebelumnya).

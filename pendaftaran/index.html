@@ -214,6 +214,22 @@
     display:none; background:#FCEFEC; border:1.5px solid var(--danger); color:var(--danger);
     padding:12px 14px; border-radius:10px; font-size:13px; margin:16px 0;
   }
+
+  #lanjutBanner{
+    display:none; background:#FFF7E0; border:1.5px solid var(--cone-500); color:#7A5B00;
+    padding:12px 14px; border-radius:10px; font-size:13px; margin:16px 0;
+  }
+  #belumLengkapBox{
+    display:none; text-align:left; background:#FFF7E0; border:1.5px solid var(--cone-500);
+    border-radius:var(--radius); padding:14px; margin:14px 0; font-size:13px; color:#7A5B00;
+  }
+  #belumLengkapBox a{color:var(--pitch-900); font-weight:600; word-break:break-all;}
+  #btnCopyLink{
+    margin-top:8px; background:#fff; border:1.5px solid var(--pitch-500); color:var(--pitch-700);
+    padding:8px 12px; border-radius:8px; font-size:12.5px; font-weight:600; cursor:pointer;
+  }
+  #printBox{margin-top:18px; display:flex; flex-direction:column; gap:8px; text-align:left;}
+  #printBox a{text-decoration:none; display:block; text-align:center; box-sizing:border-box;}
 </style>
 </head>
 <body>
@@ -230,7 +246,9 @@
 </div>
 
 <main>
+<div id="lanjutBanner"></div>
 <form id="regForm" novalidate>
+  <input type="hidden" name="kode_pendaftaran" id="kodePendaftaranInput" value="">
 
   <!-- STEP 1: BIODATA SISWA -->
   <section class="step active" data-step="1">
@@ -549,10 +567,25 @@
 
 <div id="successScreen">
   <div class="badge">✓</div>
-  <h2>Pendaftaran Terkirim!</h2>
-  <p>Terima kasih. Data Anda sudah kami terima dan akan diverifikasi oleh admin SSB PETRA Sentani.</p>
+  <h2 id="successTitle">Pendaftaran Terkirim!</h2>
+  <p id="successDesc">Terima kasih. Data Anda sudah kami terima dan akan diverifikasi oleh admin SSB PETRA Sentani.</p>
   <div class="kode" id="kodeHasil"></div>
-  <p>Simpan kode di atas sebagai referensi. Admin akan menghubungi Anda melalui nomor HP wali untuk info pembayaran &amp; jadwal.</p>
+
+  <div id="belumLengkapBox">
+    <b>Pendaftaran Anda belum lengkap.</b> Simpan link ini untuk melengkapi datanya kapan saja (tidak akan hilang):
+    <div style="margin-top:8px;"><a id="lanjutLink" href="#"></a></div>
+    <button type="button" id="btnCopyLink">📋 Salin Link</button>
+  </div>
+
+  <div id="printBox">
+    <a id="printSemua" class="btn btn-primary" target="_blank">🖨️ Cetak Semua Dokumen</a>
+    <a id="printFormulir" class="btn btn-ghost" target="_blank">Cetak Formulir Pendaftaran</a>
+    <a id="printPersetujuan" class="btn btn-ghost" target="_blank">Cetak Persetujuan Data Pribadi</a>
+    <a id="printPernyataan" class="btn btn-ghost" target="_blank">Cetak Pernyataan Pemain</a>
+    <a id="printAmatir" class="btn btn-ghost" target="_blank">Cetak Perjanjian Amatir</a>
+  </div>
+
+  <p>Simpan kode di atas sebagai referensi. Cetak &amp; bawa dokumen di atas ke sekretariat/lapangan. Admin akan menghubungi Anda melalui nomor HP wali untuk info pembayaran &amp; jadwal.</p>
 </div>
 
 </main>
@@ -593,6 +626,10 @@
     if(n === 5) buildSummary();
   }
 
+  // Hanya "Nama Lengkap" (siswa) yang benar-benar wajib supaya bisa lanjut.
+  // Field lain yang ditandai "wajib" di label tetap disorot sbg pengingat,
+  // tapi TIDAK menahan orang tua utk lanjut/kirim - boleh dilengkapi
+  // menyusul lewat link ?lanjut= yang muncul di layar sukses.
   function validateStep(n){
     let ok = true;
     const stepEl = document.querySelector('.step[data-step="'+n+'"]');
@@ -609,32 +646,16 @@
         valid = el.value.trim() !== '';
       }
       if(field){ field.classList.toggle('invalid', !valid); }
-      if(!valid) ok = false;
+      if(!valid && el.name === 'nama_lengkap') ok = false;
     });
 
     if(n === 3){
-      const required = ['file_akte_lahir','file_kartu_keluarga'];
-      let missing = false;
-      required.forEach(name=>{
-        const input = form.querySelector('input[name="'+name+'"]');
-        if(!input.files || input.files.length === 0) missing = true;
-      });
-      document.getElementById('uploadError').style.display = missing ? 'block' : 'none';
-      if(missing) ok = false;
+      document.getElementById('uploadError').style.display = 'none';
     }
 
     if(n === 4){
-      const boxes = stepEl.querySelectorAll('input[type=checkbox][required]');
-      const allChecked = Array.from(boxes).every(b=>b.checked);
-      document.getElementById('consentError').style.display = allChecked ? 'none' : 'block';
-      if(!allChecked) ok = false;
-
-      if(sigEmpty()){
-        document.getElementById('sigError').style.display = 'block';
-        ok = false;
-      } else {
-        document.getElementById('sigError').style.display = 'none';
-      }
+      document.getElementById('consentError').style.display = 'none';
+      document.getElementById('sigError').style.display = 'none';
     }
     return ok;
   }
@@ -742,7 +763,7 @@
   // ---- Submit ----
   form.addEventListener('submit', async function(e){
     e.preventDefault();
-    if(!validateStep(4)) { showStep(4); return; }
+    if(!validateStep(1)) { showStep(1); return; }
 
     const submitBtn = document.getElementById('submitBtn');
     submitBtn.disabled = true;
@@ -751,7 +772,13 @@
 
     try{
       const fd = new FormData(form);
-      fd.append('tanda_tangan_dataurl', canvas.toDataURL('image/png'));
+      // Kanvas kosong tetap menghasilkan data URL PNG yang valid (bukan string
+      // kosong) - kirim tanda tangan HANYA kalau memang sudah digambar,
+      // supaya tidak menimpa tanda tangan lama dgn gambar kosong saat
+      // pendaftaran dilanjutkan tanpa menggambar ulang.
+      if(!sigEmpty()){
+        fd.append('tanda_tangan_dataurl', canvas.toDataURL('image/png'));
+      }
 
       const res = await fetch('submit.php', { method:'POST', body: fd });
       const json = await res.json();
@@ -760,6 +787,32 @@
         document.querySelectorAll('main > *').forEach(el=>el.style.display='none');
         document.getElementById('successScreen').style.display = 'block';
         document.getElementById('kodeHasil').textContent = json.kode;
+
+        const base = 'cetak-publik.php?kode=' + encodeURIComponent(json.kode);
+        document.getElementById('printSemua').href = base + '&jenis=semua';
+        document.getElementById('printFormulir').href = base + '&jenis=formulir';
+        document.getElementById('printPersetujuan').href = base + '&jenis=persetujuan';
+        document.getElementById('printPernyataan').href = base + '&jenis=pernyataan';
+        document.getElementById('printAmatir').href = base + '&jenis=amatir';
+
+        if(!json.lengkap){
+          document.getElementById('successTitle').textContent = 'Pendaftaran Tersimpan (Belum Lengkap)';
+          document.getElementById('successDesc').textContent = 'Data yang sudah diisi berhasil disimpan. Lengkapi sisanya kapan saja lewat link di bawah - data tidak akan hilang.';
+          const link = location.origin + location.pathname + '?lanjut=' + encodeURIComponent(json.kode);
+          const box = document.getElementById('belumLengkapBox');
+          box.style.display = 'block';
+          const a = document.getElementById('lanjutLink');
+          a.textContent = link;
+          a.href = link;
+          document.getElementById('btnCopyLink').addEventListener('click', function(){
+            const btn = this;
+            navigator.clipboard.writeText(link).then(function(){
+              btn.textContent = '✓ Tersalin';
+            }).catch(function(){
+              alert('Gagal menyalin otomatis. Salin manual link di atas.');
+            });
+          });
+        }
       } else {
         throw new Error(json.message || 'Terjadi kesalahan saat mengirim data.');
       }
@@ -771,6 +824,58 @@
       submitBtn.textContent = 'Kirim Pendaftaran';
     }
   });
+
+  // ---- Lanjutkan pendaftaran yang sudah ada (?lanjut=KODE) ----
+  function isiUlangForm(data, sudahAda){
+    Object.keys(data).forEach(function(key){
+      const els = form.querySelectorAll('[name="'+key+'"]');
+      if(!els.length) return;
+      const first = els[0];
+      if(first.type === 'radio'){
+        els.forEach(function(r){ r.checked = (r.value === data[key]); });
+      } else if(first.type === 'checkbox'){
+        first.checked = (data[key] == 1 || data[key] === true);
+      } else if(data[key] !== null && data[key] !== undefined){
+        first.value = data[key];
+      }
+    });
+
+    Object.keys(sudahAda).forEach(function(field){
+      if(!sudahAda[field]) return;
+      const item = document.querySelector('.upload-item[data-field="'+field+'"]');
+      if(item){
+        item.classList.add('filled');
+        const status = item.querySelector('.up-status');
+        if(status){ status.hidden = false; status.textContent = '✓ Sudah ada (opsional: pilih file baru utk ganti)'; }
+      }
+    });
+    if(sudahAda.file_tanda_tangan){
+      document.querySelector('.sig-hint').textContent = 'Tanda tangan sebelumnya sudah tersimpan. Gambar ulang di atas HANYA kalau ingin menggantinya.';
+    }
+
+    if(data.catatan_admin){
+      const banner = document.getElementById('lanjutBanner');
+      banner.style.display = 'block';
+      banner.innerHTML = '<b>📋 Catatan dari admin:</b> ' + data.catatan_admin.replace(/</g,'&lt;');
+    }
+  }
+
+  (function initLanjut(){
+    const params = new URLSearchParams(location.search);
+    const kode = params.get('lanjut');
+    if(!kode) return;
+    document.getElementById('kodePendaftaranInput').value = kode;
+    fetch('ambil-data.php?kode=' + encodeURIComponent(kode))
+      .then(function(r){ return r.json(); })
+      .then(function(json){
+        if(json.ok){
+          isiUlangForm(json.data, json.sudah_ada);
+        } else {
+          alert('Tidak bisa memuat pendaftaran sebelumnya: ' + json.message);
+        }
+      })
+      .catch(function(){ /* biarkan form kosong seperti biasa kalau gagal ambil data */ });
+  })();
 
   renderProgress();
 })();

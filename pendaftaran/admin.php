@@ -207,6 +207,49 @@ if (!empty($_SESSION['petra_admin']) && isset($_GET['delete_admin_id'])) {
     }
 }
 
+// ---------- Hapus pendaftar (permanen, termasuk folder upload dokumennya) ----------
+$deletePendaftarError = null;
+if (!empty($_SESSION['petra_admin']) && isset($_GET['delete_pendaftar_id'])) {
+    try {
+        $pdo = get_db();
+        $targetId = (int) $_GET['delete_pendaftar_id'];
+
+        $stmt = $pdo->prepare('SELECT kode_pendaftaran, nama_lengkap FROM pendaftaran WHERE id = :id');
+        $stmt->execute(['id' => $targetId]);
+        $target = $stmt->fetch();
+
+        if ($target) {
+            $pdo->prepare('DELETE FROM pendaftaran WHERE id = :id')->execute(['id' => $targetId]);
+
+            // hapus folder upload dokumen pendaftar ini kalau ada
+            $folder = UPLOAD_DIR . '/' . $target['kode_pendaftaran'];
+            if (is_dir($folder)) {
+                $files = glob($folder . '/*');
+                foreach ($files as $f) {
+                    if (is_file($f)) unlink($f);
+                }
+                rmdir($folder);
+            }
+
+            try {
+                $log = $pdo->prepare('INSERT INTO admin_aktivitas_log (username, aksi, pendaftaran_id) VALUES (:u, :a, :id)');
+                $log->execute([
+                    'u' => $_SESSION['petra_admin_user'] ?? '?',
+                    'a' => 'Hapus pendaftar ' . $target['nama_lengkap'] . ' (' . $target['kode_pendaftaran'] . ')',
+                    'id' => null,
+                ]);
+            } catch (Exception $e) {
+                // tabel admin_aktivitas_log belum ada - abaikan
+            }
+        }
+
+        header('Location: admin.php?pendaftar_deleted=1');
+        exit;
+    } catch (Exception $e) {
+        $deletePendaftarError = 'Gagal menghapus data pendaftar. Server database sedang sibuk, coba lagi sesaat lagi.';
+    }
+}
+
 if (empty($_SESSION['petra_admin'])):
 ?>
 <!DOCTYPE html>
@@ -328,6 +371,9 @@ if ($pdo && !$connError) {
 <main>
 <?php if (!empty($connError)): ?>
   <div class="empty" style="color:#D6242A;"><?= htmlspecialchars($connError) ?></div>
+<?php endif; ?>
+<?php if (!empty($deletePendaftarError)): ?>
+  <div class="empty" style="color:#D6242A;"><?= htmlspecialchars($deletePendaftarError) ?></div>
 <?php endif; ?>
 
 <details class="card mgmt-card">
@@ -491,6 +537,12 @@ if ($pdo && !$connError) {
       </select>
       <button type="submit">Simpan Status Bayar</button>
     </form>
+
+    <div style="margin-top:14px; padding-top:10px; border-top:1px solid #DCE1F0;">
+      <a href="?delete_pendaftar_id=<?= (int)$r['id'] ?>"
+         onclick="return confirm('Hapus PERMANEN data pendaftar &quot;<?= htmlspecialchars(addslashes($r['nama_lengkap'])) ?>&quot; (<?= htmlspecialchars($r['kode_pendaftaran']) ?>)?\n\nSemua dokumen yang sudah diupload juga ikut terhapus dari server. Tindakan ini TIDAK BISA dibatalkan.')"
+         style="color:#D6242A; font-size:12.5px; font-weight:600;">🗑️ Hapus Pendaftar Ini (Permanen)</a>
+    </div>
   </details>
 <?php endforeach; endif; ?>
 </main>

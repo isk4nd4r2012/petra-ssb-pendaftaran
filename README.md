@@ -228,13 +228,19 @@ Orang tua isi index.html (5 langkah, di HP) - HANYA Nama Lengkap yang wajib
   otomasi, dan kesalahan pemetaan field bisa masuk ke database resmi
   federasi, bukan cuma database internal kita — jadi sebaiknya dihindari
   dulu kecuali benar-benar diperlukan & diuji sangat hati-hati).
+- **Perbaikan NIK & No HP notasi ilmiah di CSV**: kolom `[Pemain] NO ID` dan
+  nomor HP dulu tampil sbg `9.10302E+13` saat CSV dibuka di Excel/Sheets
+  (aplikasi spreadsheet salah mendeteksi angka 16 digit sbg numerik). Sekarang
+  dibungkus dgn trik `="angkanya"` (fungsi `csv_teks_paksa()`) supaya
+  spreadsheet membacanya sbg teks utuh, bukan angka. Sudah diverifikasi
+  bekerja di live server.
+- **Indikator ukuran folder `uploads/`**: kartu baru "💾 Penyimpanan Dokumen"
+  di paling atas `admin.php`, otomatis menghitung ulang total ukuran (MB/GB)
+  & jumlah file tiap kali halaman admin dibuka — supaya admin bisa pantau
+  pertumbuhan penyimpanan dari waktu ke waktu tanpa perlu buka File Manager
+  Hostinger.
 
 ### ⚠️ Wajib dilakukan di server setelah update ini
 
-1. **Import ulang `schema.sql` lewat phpMyAdmin** (tab Import) — nambah
-   kolom `materai_status`, `paket_pendaftaran`, `nominal_kondisi_ekonomi`,
-   `file_bukti_transfer`, `jenis_pendaftar`, `klaim_lunas_lama`,
-   `status_pembayaran`. Aman, tidak menghapus data pendaftar yang sudah ada.
-2. Upload ulang `admin.php`, `inc-cetak-dokumen.php`, `index.html`,
-   `submit.php`, dan `ambil-data.php` (kelimanya berubah), plus **1 file
-   baru**: `export-csv.php`.
+Tidak ada perubahan skema database di update ini (tidak perlu import ulang
+`schema.sql`). Cukup upload ulang **1 file**: `admin.php`.

@@ -12,6 +12,30 @@ function client_ip() {
     return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
 }
 
+// Hitung total ukuran & jumlah file di folder uploads (rekursif ke semua subfolder kode_pendaftaran)
+function hitung_ukuran_folder($dir) {
+    $totalBytes = 0;
+    $jumlahFile = 0;
+    if (!is_dir($dir)) return [$totalBytes, $jumlahFile];
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS)
+    );
+    foreach ($iterator as $file) {
+        if ($file->isFile()) {
+            $totalBytes += $file->getSize();
+            $jumlahFile++;
+        }
+    }
+    return [$totalBytes, $jumlahFile];
+}
+
+function format_ukuran_bytes($bytes) {
+    if ($bytes >= 1073741824) return round($bytes / 1073741824, 2) . ' GB';
+    if ($bytes >= 1048576) return round($bytes / 1048576, 2) . ' MB';
+    if ($bytes >= 1024) return round($bytes / 1024, 2) . ' KB';
+    return $bytes . ' B';
+}
+
 function log_login_attempt($pdo, $username, $berhasil) {
     try {
         $stmt = $pdo->prepare('INSERT INTO admin_login_log (username, ip, berhasil) VALUES (:u, :ip, :b)');
@@ -310,6 +334,8 @@ if ($pdo && !$connError) {
     try { $aktivitasList = $pdo->query('SELECT * FROM admin_aktivitas_log ORDER BY waktu DESC LIMIT 30')->fetchAll(); } catch (Exception $e) {}
     try { $loginLogList = $pdo->query('SELECT * FROM admin_login_log ORDER BY waktu DESC LIMIT 30')->fetchAll(); } catch (Exception $e) {}
 }
+
+[$uploadsSizeBytes, $uploadsFileCount] = hitung_ukuran_folder(UPLOAD_DIR);
 ?>
 <!DOCTYPE html>
 <html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
@@ -375,6 +401,14 @@ if ($pdo && !$connError) {
 <?php if (!empty($deletePendaftarError)): ?>
   <div class="empty" style="color:#D6242A;"><?= htmlspecialchars($deletePendaftarError) ?></div>
 <?php endif; ?>
+
+<div class="card" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+  <div>
+    <div style="font-weight:600; font-size:15px;">💾 Penyimpanan Dokumen (folder uploads)</div>
+    <div class="meta"><?= number_format($uploadsFileCount) ?> file tersimpan di server</div>
+  </div>
+  <div style="font-size:22px; font-weight:700; color:#0F1F52;"><?= htmlspecialchars(format_ukuran_bytes($uploadsSizeBytes)) ?></div>
+</div>
 
 <details class="card mgmt-card">
   <summary>⚙️ Kelola Akun Admin (<?= count($adminList) ?>)</summary>

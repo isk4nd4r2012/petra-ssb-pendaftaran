@@ -198,13 +198,36 @@ Orang tua isi index.html (5 langkah, di HP) - HANYA Nama Lengkap yang wajib
   Konfirmasi" begitu bukti transfer diupload, lalu admin yang tandai final
   "Lunas" lewat `admin.php` setelah verifikasi manual (pola sama seperti
   status materai — status "Lunas" tidak pernah diturunkan otomatis).
-- **Export data ke CSV**: tombol "📊 Export Data (CSV)" di `admin.php` →
-  `export-csv.php` (perlu login), mengunduh semua data pendaftar dalam satu
-  file CSV rapi (buka langsung di Excel/Sheets). Berguna sbg cadangan data
-  & bahan input manual ke sistem lain seperti SIAP PSSI, yang setahu kami
-  belum expose API publik utk klub kecil — jadi jembatan CSV ini jadi
-  langkah paling realistis utk sekarang. Kalau nanti PSSI ternyata punya
-  jalur integrasi resmi, itu bisa dibahas terpisah.
+- **Export data ke CSV, format siap pakai utk isi manual ke SIAP PSSI**:
+  tombol "📊 Export Data (CSV)" di `admin.php` → `export-csv.php` (perlu
+  login). SIAP PSSI (form "Single Registration Player") tidak punya fitur
+  import CSV/bulk sendiri — cuma bisa isi manual satu pemain per satu lewat
+  form multi-tab (Pemain / Klub Sebelumnya / Klub Baru / Pembayaran /
+  Dokumen). Supaya proses isi manual itu lebih cepat, urutan & label kolom
+  CSV kita **dibuat mengikuti persis urutan field di tiap tab SIAP**
+  (header dikasih awalan `[Pemain]`, `[Klub Sebelumnya]`, `[Klub Baru]`) —
+  admin tinggal buka CSV di sebelah form SIAP lalu copy-paste tiap kolom ke
+  field yang sesuai. Beberapa hal perlu diperhatikan:
+  - Kolom yang datanya **tidak kita kumpulkan** (Provinsi, Kota/Kab, Email)
+    sengaja dikosongkan — isi manual langsung di SIAP.
+  - Kolom "Klub Lama" diisi otomatis `PENDAFTARAN AWAL` dan beberapa lain
+    (Federasi, status Amatir, alasan pemutusan kontrak, dst) diisi nilai
+    tetap yang wajar utk pemain SSB yang baru pertama kali daftar PSSI —
+    **cek ulang manual** kalau ada pemain yang bukan kasus ini (mis. pindah
+    dari klub anggota PSSI lain).
+  - "Alamat" pemain pakai alamat ayah → ibu → wali sbg fallback (sama seperti
+    di dokumen cetak), krn form kita tidak mengumpulkan alamat siswa terpisah.
+  - Kolom berlabel `[Internal]` di bagian paling akhir (Kode Pendaftaran,
+    Status, dll) **bukan field SIAP** — itu cuma referensi supaya admin
+    gampang mencocokkan baris CSV dgn kartu pendaftar di `admin.php`.
+
+  Ini tetap proses **manual** (bukan integrasi otomatis) — SIAP setahu kami
+  tidak expose API publik utk klub kecil, jadi jembatan CSV ini jembatan
+  paling realistis & aman utk sekarang (otomasi browser/bot ke SIAP secara
+  teknis mungkin, tapi berisiko: belum jelas apakah ToS SIAP melarang
+  otomasi, dan kesalahan pemetaan field bisa masuk ke database resmi
+  federasi, bukan cuma database internal kita — jadi sebaiknya dihindari
+  dulu kecuali benar-benar diperlukan & diuji sangat hati-hati).
 
 ### ⚠️ Wajib dilakukan di server setelah update ini
 

@@ -177,6 +177,12 @@
     background:none; border:none; color:var(--cone-600); font-weight:600; font-size:13px; cursor:pointer; padding:6px;
   }
   .sig-hint{font-size:11.5px; color:var(--ink-600); margin-top:6px;}
+  .sig-mode-tabs{display:flex; gap:8px; margin-bottom:12px;}
+  .sig-mode-btn{
+    flex:1; padding:9px 10px; border-radius:9px; font-size:12.5px; font-weight:600;
+    border:1.5px solid var(--line-200); background:var(--paper-0); color:var(--ink-600); cursor:pointer;
+  }
+  .sig-mode-btn.active{background:var(--pitch-900); border-color:var(--pitch-900); color:#fff;}
 
   /* ---------- Nav buttons ---------- */
   .nav-row{display:flex; gap:10px; margin-top:8px;}
@@ -541,14 +547,30 @@
 
     <div class="card">
       <h3>Tanda Tangan Digital Orang Tua / Wali</h3>
-      <div class="sig-wrap">
-        <canvas id="sigPad"></canvas>
-        <div class="sig-actions">
-          <span style="font-size:12px; color:var(--ink-600);">Gunakan jari untuk tanda tangan</span>
-          <button type="button" id="sigClear">Hapus &amp; Ulangi</button>
-        </div>
+
+      <div class="sig-mode-tabs">
+        <button type="button" class="sig-mode-btn active" data-sig-mode="draw">✍️ Gambar di Layar</button>
+        <button type="button" class="sig-mode-btn" data-sig-mode="upload">🖼️ Upload Foto Tanda Tangan</button>
       </div>
-      <div class="sig-hint">Tanda tangan ini mewakili tanda tangan basah pada ketiga surat pernyataan di atas.</div>
+
+      <div id="sigModeDraw">
+        <div class="sig-wrap">
+          <canvas id="sigPad"></canvas>
+          <div class="sig-actions">
+            <span style="font-size:12px; color:var(--ink-600);">Gunakan jari untuk tanda tangan</span>
+            <button type="button" id="sigClear">Hapus &amp; Ulangi</button>
+          </div>
+        </div>
+        <div class="sig-hint" id="sigHintDraw">Tanda tangan ini mewakili tanda tangan basah pada ketiga surat pernyataan di atas.</div>
+      </div>
+
+      <div id="sigModeUpload" hidden>
+        <button type="button" class="upload-btn" id="sigUploadTrigger">📷 Foto / Upload Tanda Tangan</button>
+        <img id="sigUploadPreviewImg" style="display:none; max-width:100%; margin-top:10px; border:1.5px solid var(--line-200); border-radius:10px;">
+        <div class="file-name" id="sigUploadPreviewName"></div>
+        <div class="sig-hint">Foto tanda tangan basah di atas kertas (mis. yang sudah pernah dibuat sebelumnya), atau pilih gambar tanda tangan yang sudah ada di HP.</div>
+      </div>
+
       <div class="error-msg" id="sigError" style="display:none;">Mohon bubuhkan tanda tangan sebelum lanjut.</div>
     </div>
 
@@ -661,6 +683,8 @@
 (function(){
   const totalSteps = 5;
   let current = 1;
+  let sigMode = 'draw'; // 'draw' (gambar di layar) atau 'upload' (foto/scan tanda tangan)
+  let uploadedSigDataUrl = null;
   const form = document.getElementById('regForm');
   const track = document.getElementById('progressTrack');
   const stepTitles = {1:'Data Siswa',2:'Orang Tua',3:'Dokumen',4:'Pernyataan',5:'Kirim'};
@@ -846,8 +870,31 @@
     });
     document.getElementById('scanFileDirect').addEventListener('change', function(){
       const file = this.files[0];
-      if(file) assignFileToField(targetField, file);
       this.value = '';
+      if(!file){ closeModal(); return; }
+
+      if(targetField === '__signature__'){
+        if(!file.type.startsWith('image/')){
+          alert('Untuk tanda tangan, mohon pilih file gambar (JPG/PNG), bukan PDF.');
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = function(ev){
+          const img = new Image();
+          img.onload = function(){
+            const c = document.createElement('canvas');
+            c.width = img.naturalWidth; c.height = img.naturalHeight;
+            c.getContext('2d').drawImage(img, 0, 0);
+            setUploadedSignature(c.toDataURL('image/png'));
+            closeModal();
+          };
+          img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+        return;
+      }
+
+      assignFileToField(targetField, file);
       closeModal();
     });
 
@@ -974,6 +1021,12 @@
       if('filter' in finalCtx){ finalCtx.filter = 'contrast(1.28) brightness(1.06) saturate(1.12)'; }
       finalCtx.drawImage(outCanvas, 0, 0);
 
+      if(targetField === '__signature__'){
+        setUploadedSignature(finalCanvas.toDataURL('image/png'));
+        closeModal();
+        return;
+      }
+
       finalCanvas.toBlob(function(blob){
         if(!blob){ alert('Gagal memproses foto. Coba ambil ulang.'); return; }
         const file = new File([blob], (targetField||'dokumen') + '-scan.jpg', {type:'image/jpeg'});
@@ -991,31 +1044,77 @@
       const c = document.createElement('canvas');
       c.width = scanImg.naturalWidth; c.height = scanImg.naturalHeight;
       c.getContext('2d').drawImage(scanImg,0,0);
+
+      if(targetField === '__signature__'){
+        setUploadedSignature(c.toDataURL('image/png'));
+        closeModal();
+        return;
+      }
+
       c.toBlob(function(blob){
         const file = new File([blob], (targetField||'dokumen') + '.jpg', {type:'image/jpeg'});
         assignFileToField(targetField, file);
         closeModal();
       }, 'image/jpeg', 0.92);
     });
+
+    document.getElementById('sigUploadTrigger').addEventListener('click', function(){
+      openModal('__signature__');
+    });
   })();
+
+  // ---- Tanda tangan: pilihan mode (gambar di layar / upload foto) ----
+  function setUploadedSignature(dataUrl){
+    uploadedSigDataUrl = dataUrl;
+    const img = document.getElementById('sigUploadPreviewImg');
+    img.src = dataUrl;
+    img.style.display = 'block';
+    document.getElementById('sigUploadPreviewName').textContent = '✓ Tanda tangan terpasang';
+    document.getElementById('sigError').style.display = 'none';
+  }
+  document.querySelectorAll('.sig-mode-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      sigMode = btn.dataset.sigMode;
+      document.querySelectorAll('.sig-mode-btn').forEach(function(b){ b.classList.toggle('active', b === btn); });
+      document.getElementById('sigModeDraw').hidden = (sigMode !== 'draw');
+      document.getElementById('sigModeUpload').hidden = (sigMode !== 'upload');
+    });
+  });
 
   // ---- Signature pad ----
   const canvas = document.getElementById('sigPad');
   const ctx = canvas.getContext('2d');
   let drawing = false, hasDrawn = false;
 
-  function resizeCanvas(){
+  // Catatan bug lama: resize (termasuk saat keyboard HP muncul/hilang di
+  // langkah lain) memaksa kanvas di-resize walau sedang tersembunyi
+  // (display:none di langkah yg tidak aktif) - rect-nya jadi 0x0, kanvas
+  // ikut jadi 0x0 & kosong, tapi status "sudah menggambar" tidak ikut
+  // direset, sehingga saat kirim, kanvas 0x0 itu menghasilkan data gambar
+  // rusak ("Format tanda tangan tidak valid"). Diperbaiki: lewati resize
+  // sama sekali kalau kanvas sedang tersembunyi, dan gambar ulang isi lama
+  // (bukan cuma diambil lalu dibuang) setelah resize yang valid.
+  function resizeCanvas(preserveDataUrl){
     const ratio = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
+    if(rect.width === 0 || rect.height === 0) return; // kanvas sedang tersembunyi - jangan diapa-apakan
     canvas.width = rect.width * ratio;
     canvas.height = rect.height * ratio;
     ctx.scale(ratio, ratio);
     ctx.lineWidth = 2.2;
     ctx.lineCap = 'round';
     ctx.strokeStyle = '#0F1F52';
+    if(preserveDataUrl){
+      const img = new Image();
+      img.onload = function(){ ctx.drawImage(img, 0, 0, rect.width, rect.height); };
+      img.src = preserveDataUrl;
+    }
   }
-  window.addEventListener('resize', ()=>{ const d = canvas.toDataURL(); resizeCanvas(); });
-  setTimeout(resizeCanvas, 50);
+  window.addEventListener('resize', ()=>{
+    const d = hasDrawn ? canvas.toDataURL('image/png') : null;
+    resizeCanvas(d);
+  });
+  setTimeout(()=>resizeCanvas(null), 50);
 
   function pos(e){
     const rect = canvas.getBoundingClientRect();
@@ -1037,7 +1136,14 @@
     ctx.clearRect(0,0,canvas.width,canvas.height);
     hasDrawn = false;
   });
-  function sigEmpty(){ return !hasDrawn; }
+  function sigEmpty(){ return !hasDrawn || canvas.width === 0 || canvas.height === 0; }
+
+  // Tanda tangan bisa berasal dari 2 mode: gambar di kanvas, atau foto/upload
+  // yang sudah diproses lewat modal foto-terpandu (disimpan di uploadedSigDataUrl).
+  function getSignatureDataUrl(){
+    if(sigMode === 'upload') return uploadedSigDataUrl;
+    return sigEmpty() ? null : canvas.toDataURL('image/png');
+  }
 
   // ---- Summary ----
   function buildSummary(){
@@ -1070,11 +1176,12 @@
     try{
       const fd = new FormData(form);
       // Kanvas kosong tetap menghasilkan data URL PNG yang valid (bukan string
-      // kosong) - kirim tanda tangan HANYA kalau memang sudah digambar,
+      // kosong) - kirim tanda tangan HANYA kalau memang sudah digambar/diupload,
       // supaya tidak menimpa tanda tangan lama dgn gambar kosong saat
-      // pendaftaran dilanjutkan tanpa menggambar ulang.
-      if(!sigEmpty()){
-        fd.append('tanda_tangan_dataurl', canvas.toDataURL('image/png'));
+      // pendaftaran dilanjutkan tanpa menggambar/upload ulang.
+      const sigDataUrl = getSignatureDataUrl();
+      if(sigDataUrl){
+        fd.append('tanda_tangan_dataurl', sigDataUrl);
       }
 
       const res = await fetch('submit.php', { method:'POST', body: fd });
@@ -1147,7 +1254,7 @@
       }
     });
     if(sudahAda.file_tanda_tangan){
-      document.querySelector('.sig-hint').textContent = 'Tanda tangan sebelumnya sudah tersimpan. Gambar ulang di atas HANYA kalau ingin menggantinya.';
+      document.getElementById('sigHintDraw').textContent = 'Tanda tangan sebelumnya sudah tersimpan. Gambar ulang di atas HANYA kalau ingin menggantinya.';
     }
 
     if(data.catatan_admin){

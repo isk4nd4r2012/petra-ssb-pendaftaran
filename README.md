@@ -148,6 +148,22 @@ Orang tua isi index.html (5 langkah, di HP) - HANYA Nama Lengkap yang wajib
   "🖋 Materai: Belum/Sudah" + tombol utk menandai kapan materainya sudah
   dibeli & ditempel admin — berguna krn pendaftar masuk tidak menentu tiap
   hari, jadi admin perlu cara gampang melacak siapa yg masih perlu diurus.
+- **Perbaikan bug "Format tanda tangan tidak valid"**: bug lama di kanvas
+  tanda tangan — event `resize` (bisa terpicu keyboard HP muncul/hilang saat
+  mengisi langkah lain, bukan cuma putar layar) memaksa kanvas di-resize
+  walau sedang tersembunyi (`display:none` di langkah yg tidak aktif),
+  sehingga ukurannya jadi 0x0 dan isinya hilang, tapi status "sudah
+  menggambar" tidak ikut direset — akibatnya saat kirim, kanvas 0x0 itu
+  menghasilkan data gambar rusak yg gagal validasi di `submit.php`. Sekarang
+  resize dilewati sama sekali kalau kanvas sedang tersembunyi, dan isi
+  kanvas digambar ulang (bukan hilang) setelah resize yang valid.
+- **Upload/foto tanda tangan sbg alternatif gambar di layar**: di langkah 4,
+  sekarang ada 2 tab — "✍️ Gambar di Layar" (seperti sebelumnya) atau
+  "🖼️ Upload Foto Tanda Tangan" (pakai modal foto-terpandu yang sama dgn
+  upload dokumen — ambil foto/pilih galeri/pakai file rapi, lalu opsional
+  luruskan sudut). Hasil akhir tetap dikirim lewat field
+  `tanda_tangan_dataurl` yang sama seperti sebelumnya, jadi `submit.php`
+  tidak perlu diubah.
 
 ### ⚠️ Wajib dilakukan di server setelah update materai ini
 

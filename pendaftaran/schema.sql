@@ -64,3 +64,35 @@ CREATE TABLE IF NOT EXISTS pendaftaran (
 
     ip_pendaftar VARCHAR(45)
 );
+
+-- Akun admin (multi-user) untuk login ke admin.php.
+-- ADMIN_USERNAME/ADMIN_PASSWORD di config.php tetap berfungsi sbg akun
+-- cadangan (bootstrap) untuk membuat akun-akun di tabel ini lewat menu
+-- "Kelola Admin" setelah login pertama kali.
+CREATE TABLE IF NOT EXISTS admin_users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    nama_tampilan VARCHAR(100) NOT NULL,
+    dibuat_pada DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Catatan setiap percobaan login (sukses maupun gagal) - dipakai untuk
+-- rate limiting (blokir sementara setelah beberapa kali gagal beruntun).
+CREATE TABLE IF NOT EXISTS admin_login_log (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL,
+    waktu DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ip VARCHAR(45),
+    berhasil TINYINT(1) NOT NULL
+);
+
+-- Catatan aktivitas admin (siapa mengubah status pendaftar yang mana, kapan)
+-- supaya admin bisa saling pantau siapa memproses pendaftar yang mana.
+CREATE TABLE IF NOT EXISTS admin_aktivitas_log (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL,
+    waktu DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    aksi VARCHAR(255) NOT NULL,
+    pendaftaran_id INT NULL
+);

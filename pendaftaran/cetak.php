@@ -13,18 +13,34 @@ if (empty($_SESSION['petra_admin'])) {
     die('Akses ditolak. Silakan login lewat admin.php terlebih dahulu.');
 }
 
-$id = (int) ($_GET['id'] ?? 0);
-if (!$id) die('ID pendaftaran tidak valid.');
+// ---------- Ambil daftar ID: satu (?id=) atau banyak sekaligus (?ids=1,2,3) ----------
+$ids = [];
+if (!empty($_GET['ids'])) {
+    foreach (explode(',', $_GET['ids']) as $v) {
+        $v = (int) trim($v);
+        if ($v > 0) $ids[] = $v;
+    }
+    $ids = array_values(array_unique($ids));
+    if (count($ids) > 50) $ids = array_slice($ids, 0, 50); // batas wajar sekali cetak
+} elseif (!empty($_GET['id'])) {
+    $ids = [(int) $_GET['id']];
+}
+if (!$ids) die('ID pendaftaran tidak valid.');
 
 try {
     $pdo = get_db();
-    $stmt = $pdo->prepare('SELECT * FROM pendaftaran WHERE id = :id');
-    $stmt->execute(['id' => $id]);
-    $r = $stmt->fetch();
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $stmt = $pdo->prepare("SELECT * FROM pendaftaran WHERE id IN ($placeholders)");
+    $stmt->execute($ids);
+    $byId = [];
+    foreach ($stmt->fetchAll() as $row) $byId[$row['id']] = $row;
+    // urutkan sesuai urutan ids yang diminta (mis. urutan pilih di admin.php)
+    $rows = [];
+    foreach ($ids as $reqId) if (isset($byId[$reqId])) $rows[] = $byId[$reqId];
 } catch (Exception $e) {
     die('Gagal mengambil data dari database. Server database sedang sibuk, coba lagi sesaat lagi.');
 }
-if (!$r) die('Data pendaftaran tidak ditemukan.');
+if (!$rows) die('Data pendaftaran tidak ditemukan.');
 
 // ---------- helpers ----------
 function v($val, $fallback = '...........................................') {
@@ -44,107 +60,35 @@ function ttl($tempat, $tgl) {
     $s = trim($tempat . ($tempat && $tgl ? ', ' : '') . $tgl);
     return $s !== '' ? htmlspecialchars($s) : '...........................................';
 }
+// ---- reusable table for the 3 legal documents (wali + pemain data) ----
+function info_table($r, $alamatSiswa) {
+    ob_start(); ?>
+    <table class="info-table">
+      <tr><td class="label">Nama Lengkap</td><td class="colon">:</td><td><?= v($r['wali_nama_lengkap']) ?></td></tr>
+      <tr><td class="label">N.I.K</td><td class="colon">:</td><td><?= v($r['wali_nik']) ?></td></tr>
+      <tr><td class="label">Tempat / Tgl. Lahir</td><td class="colon">:</td><td><?= ttl($r['wali_tempat_lahir'], $r['wali_tanggal_lahir']) ?></td></tr>
+      <tr><td class="label">Alamat</td><td class="colon">:</td><td><?= v($r['wali_alamat']) ?></td></tr>
+      <tr><td class="label">Nomor Telpon / Hp</td><td class="colon">:</td><td><?= v($r['wali_hp']) ?></td></tr>
+    </table>
+    <p style="margin:14px 0 6px;">Sebagai orang tua / wali dari pemain :</p>
+    <table class="info-table">
+      <tr><td class="label">Nama Lengkap</td><td class="colon">:</td><td><?= v($r['nama_lengkap']) ?></td></tr>
+      <tr><td class="label">N.I.K</td><td class="colon">:</td><td><?= v($r['nik_siswa']) ?></td></tr>
+      <tr><td class="label">Tempat / Tgl. Lahir</td><td class="colon">:</td><td><?= ttl($r['tempat_lahir'], $r['tanggal_lahir']) ?></td></tr>
+      <tr><td class="label">Alamat</td><td class="colon">:</td><td><?= v($alamatSiswa) ?></td></tr>
+      <tr><td class="label">Nomor Telpon / Hp</td><td class="colon">:</td><td><?= v($r['nomor_hp_siswa']) ?></td></tr>
+    </table>
+    <?php return ob_get_clean();
+}
 
-$sigPath = $r['file_tanda_tangan'] ? UPLOAD_DIR . '/' . $r['file_tanda_tangan'] : null;
-$sigWebPath = $r['file_tanda_tangan'] ? 'uploads/' . $r['file_tanda_tangan'] : null;
-$sigTag = $sigWebPath ? '<img src="'.htmlspecialchars($sigWebPath).'" class="sig-img" alt="Tanda tangan">' : '';
-
-// alamat siswa: dokumen asli tidak memisahkan alamat siswa dari orang tua, jadi pakai alamat ayah/ibu/wali sebagai fallback
-$alamatSiswa = $r['alamat_ayah'] ?: ($r['alamat_ibu'] ?: $r['wali_alamat']);
-
-$today = tgl_indo(date('Y-m-d'));
-
-$jenis = $_GET['jenis'] ?? 'semua';
-$validJenis = ['semua','formulir','persetujuan','pernyataan','amatir'];
-if (!in_array($jenis, $validJenis)) $jenis = 'semua';
-?>
-<!DOCTYPE html>
-<html lang="id">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cetak Dokumen — <?= v($r['nama_lengkap'], '') ?></title>
-<style>
-  @page { size: 215mm 330mm; margin: 18mm 16mm 14mm; }
-  * { box-sizing: border-box; }
-  body {
-    font-family: 'Times New Roman', Georgia, serif;
-    font-size: 12.5pt;
-    line-height: 1.55;
-    color: #111;
-    margin: 0;
-    background: #ECECEC;
-  }
-  .doc-page {
-    background: #fff;
-    width: 215mm;
-    min-height: 330mm;
-    margin: 14px auto;
-    padding: 18mm 16mm 14mm;
-    page-break-after: always;
-    box-shadow: 0 2px 10px rgba(0,0,0,.15);
-  }
-  .doc-page:last-child { page-break-after: auto; }
-
-  .doc-title { text-align:center; font-weight:bold; font-size:14pt; margin:0 0 2px; text-decoration:underline; }
-  .doc-title.small { font-size:13pt; }
-  .doc-subtitle { text-align:center; font-weight:bold; font-size:12.5pt; margin:0 0 18px; }
-  .logo-header { display:flex; align-items:center; gap:14px; margin-bottom:6px; }
-  .logo-header img { width:58px; height:58px; object-fit:contain; }
-  .logo-header .lh-text { text-align:center; flex:1; }
-  .lh-text .doc-title, .lh-text .doc-subtitle { margin:0; }
-
-  table.info-table { width:100%; border-collapse:collapse; margin:14px 0 16px; }
-  table.info-table td { padding:4px 6px; vertical-align:top; font-size:12.5pt; }
-  table.info-table td.label { width:36%; }
-  table.info-table td.colon { width:14px; }
-
-  .section-label { font-weight:bold; text-decoration:underline; margin:16px 0 6px; }
-
-  .biodata-row { margin:6px 0; font-size:12.5pt; }
-  .biodata-row .lbl { display:inline-block; width:150px; font-weight:bold; }
-
-  ol.consent-list, ul.consent-list { margin:10px 0; padding-left:22px; }
-  ol.consent-list li, ul.consent-list li { margin-bottom:8px; text-align:justify; }
-
-  p.body-text { text-align:justify; margin:12px 0; }
-
-  .sign-block { margin-top:34px; width:60%; margin-left:auto; text-align:center; }
-  .sign-block .place-date { margin-bottom:4px; }
-  .sign-block .role { margin-bottom:2px; }
-  .sig-img { width:150px; max-height:70px; object-fit:contain; display:block; margin:6px auto; }
-  .sig-line { margin-top:2px; font-weight:bold; border-top: 1px solid #111; display:inline-block; padding-top:4px; min-width:200px; }
-  .materai-note { font-size:10pt; font-style:italic; color:#555; margin-top:2px; }
-
-  .biaya-box { margin-top:22px; border-top:1px solid #999; padding-top:10px; }
-  .biaya-box b { font-size:12.5pt; }
-  .biaya-box ul { margin:6px 0 0; padding-left:20px; }
-
-  .kode-stamp { position:absolute; top:8mm; right:10mm; font-size:8.5pt; color:#999; }
-
-  .print-bar {
-    position: sticky; top:0; z-index:50;
-    background:#16302A; color:#fff; padding:10px 16px;
-    display:flex; justify-content:space-between; align-items:center;
-    font-family: system-ui, sans-serif; font-size:14px;
-  }
-  .print-bar button {
-    background:#F0B429; color:#0F1F52; border:none; border-radius:8px;
-    padding:9px 16px; font-weight:700; font-size:14px;
-  }
-  @media print {
-    body { background:#fff; }
-    .print-bar { display:none; }
-    .doc-page { box-shadow:none; margin:0; max-width:none; }
-  }
-</style>
-</head>
-<body>
-
-<div class="print-bar">
-  <span><?= v($r['nama_lengkap'], '') ?> — <?= htmlspecialchars($r['kode_pendaftaran']) ?></span>
-  <button onclick="window.print()">🖨️ Cetak / Simpan PDF</button>
-</div>
+// ---- render 4 dokumen untuk 1 pendaftar ----
+function render_docs($r, $jenis) {
+    $sigWebPath = $r['file_tanda_tangan'] ? 'uploads/' . $r['file_tanda_tangan'] : null;
+    $sigTag = $sigWebPath ? '<img src="'.htmlspecialchars($sigWebPath).'" class="sig-img" alt="Tanda tangan">' : '';
+    // alamat siswa: dokumen asli tidak memisahkan alamat siswa dari orang tua, jadi pakai alamat ayah/ibu/wali sebagai fallback
+    $alamatSiswa = $r['alamat_ayah'] ?: ($r['alamat_ibu'] ?: $r['wali_alamat']);
+    $today = tgl_indo(date('Y-m-d'));
+    ?>
 
 <?php if ($jenis === 'semua' || $jenis === 'formulir'): ?>
 <!-- ======================= DOKUMEN 1: FORMULIR PENDAFTARAN ======================= -->
@@ -200,29 +144,6 @@ if (!in_array($jenis, $validJenis)) $jenis = 'semua';
   </div>
 </div>
 <?php endif; ?>
-
-<?php
-// ---- reusable table for the 3 legal documents (wali + pemain data) ----
-function info_table($r, $alamatSiswa) {
-    ob_start(); ?>
-    <table class="info-table">
-      <tr><td class="label">Nama Lengkap</td><td class="colon">:</td><td><?= v($r['wali_nama_lengkap']) ?></td></tr>
-      <tr><td class="label">N.I.K</td><td class="colon">:</td><td><?= v($r['wali_nik']) ?></td></tr>
-      <tr><td class="label">Tempat / Tgl. Lahir</td><td class="colon">:</td><td><?= ttl($r['wali_tempat_lahir'], $r['wali_tanggal_lahir']) ?></td></tr>
-      <tr><td class="label">Alamat</td><td class="colon">:</td><td><?= v($r['wali_alamat']) ?></td></tr>
-      <tr><td class="label">Nomor Telpon / Hp</td><td class="colon">:</td><td><?= v($r['wali_hp']) ?></td></tr>
-    </table>
-    <p style="margin:14px 0 6px;">Sebagai orang tua / wali dari pemain :</p>
-    <table class="info-table">
-      <tr><td class="label">Nama Lengkap</td><td class="colon">:</td><td><?= v($r['nama_lengkap']) ?></td></tr>
-      <tr><td class="label">N.I.K</td><td class="colon">:</td><td><?= v($r['nik_siswa']) ?></td></tr>
-      <tr><td class="label">Tempat / Tgl. Lahir</td><td class="colon">:</td><td><?= ttl($r['tempat_lahir'], $r['tanggal_lahir']) ?></td></tr>
-      <tr><td class="label">Alamat</td><td class="colon">:</td><td><?= v($alamatSiswa) ?></td></tr>
-      <tr><td class="label">Nomor Telpon / Hp</td><td class="colon">:</td><td><?= v($r['nomor_hp_siswa']) ?></td></tr>
-    </table>
-    <?php return ob_get_clean();
-}
-?>
 
 <?php if ($jenis === 'semua' || $jenis === 'persetujuan'): ?>
 <!-- ======================= DOKUMEN 2: PERSETUJUAN DATA PRIBADI ======================= -->
@@ -309,6 +230,111 @@ function info_table($r, $alamatSiswa) {
   </div>
 </div>
 <?php endif; ?>
+<?php
+}
+
+$jenis = $_GET['jenis'] ?? 'semua';
+$validJenis = ['semua','formulir','persetujuan','pernyataan','amatir'];
+if (!in_array($jenis, $validJenis)) $jenis = 'semua';
+
+$judulBar = count($rows) === 1
+    ? v($rows[0]['nama_lengkap'], '') . ' — ' . htmlspecialchars($rows[0]['kode_pendaftaran'])
+    : count($rows) . ' dokumen pendaftar terpilih';
+?>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cetak Dokumen<?= count($rows) === 1 ? ' — ' . v($rows[0]['nama_lengkap'], '') : ' Massal' ?></title>
+<style>
+  @page { size: 215mm 330mm; margin: 18mm 16mm 14mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Times New Roman', Georgia, serif;
+    font-size: 12.5pt;
+    line-height: 1.55;
+    color: #111;
+    margin: 0;
+    background: #ECECEC;
+  }
+  .doc-page {
+    background: #fff;
+    width: 215mm;
+    min-height: 330mm;
+    margin: 14px auto;
+    padding: 18mm 16mm 14mm;
+    page-break-after: always;
+    box-shadow: 0 2px 10px rgba(0,0,0,.15);
+  }
+  .doc-page:last-child { page-break-after: auto; }
+
+  .doc-title { text-align:center; font-weight:bold; font-size:14pt; margin:0 0 2px; text-decoration:underline; }
+  .doc-title.small { font-size:13pt; }
+  .doc-subtitle { text-align:center; font-weight:bold; font-size:12.5pt; margin:0 0 18px; }
+  .logo-header { display:flex; align-items:center; gap:14px; margin-bottom:6px; }
+  .logo-header img { width:58px; height:58px; object-fit:contain; }
+  .logo-header .lh-text { text-align:center; flex:1; }
+  .lh-text .doc-title, .lh-text .doc-subtitle { margin:0; }
+
+  table.info-table { width:100%; border-collapse:collapse; margin:14px 0 16px; }
+  table.info-table td { padding:4px 6px; vertical-align:top; font-size:12.5pt; }
+  table.info-table td.label { width:36%; }
+  table.info-table td.colon { width:14px; }
+
+  .section-label { font-weight:bold; text-decoration:underline; margin:16px 0 6px; }
+
+  .biodata-row { margin:6px 0; font-size:12.5pt; }
+  .biodata-row .lbl { display:inline-block; width:150px; font-weight:bold; }
+
+  ol.consent-list, ul.consent-list { margin:10px 0; padding-left:22px; }
+  ol.consent-list li, ul.consent-list li { margin-bottom:8px; text-align:justify; }
+
+  p.body-text { text-align:justify; margin:12px 0; }
+
+  .sign-block { margin-top:34px; width:60%; margin-left:auto; text-align:center; }
+  .sign-block .place-date { margin-bottom:4px; }
+  .sign-block .role { margin-bottom:2px; }
+  .sig-img { width:150px; max-height:70px; object-fit:contain; display:block; margin:6px auto; }
+  .sig-line { margin-top:2px; font-weight:bold; border-top: 1px solid #111; display:inline-block; padding-top:4px; min-width:200px; }
+  .materai-note { font-size:10pt; font-style:italic; color:#555; margin-top:2px; }
+
+  .biaya-box { margin-top:22px; border-top:1px solid #999; padding-top:10px; }
+  .biaya-box b { font-size:12.5pt; }
+  .biaya-box ul { margin:6px 0 0; padding-left:20px; }
+
+  .kode-stamp { position:absolute; top:8mm; right:10mm; font-size:8.5pt; color:#999; }
+
+  .print-bar {
+    position: sticky; top:0; z-index:50;
+    background:#16302A; color:#fff; padding:10px 16px;
+    display:flex; justify-content:space-between; align-items:center;
+    font-family: system-ui, sans-serif; font-size:14px;
+  }
+  .print-bar button {
+    background:#F0B429; color:#0F1F52; border:none; border-radius:8px;
+    padding:9px 16px; font-weight:700; font-size:14px;
+  }
+  @media print {
+    body { background:#fff; }
+    .print-bar { display:none; }
+    .doc-page { box-shadow:none; margin:0; max-width:none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="print-bar">
+  <span><?= $judulBar ?></span>
+  <button onclick="window.print()">🖨️ Cetak / Simpan PDF</button>
+</div>
+
+<?php foreach ($rows as $r): ?>
+<!-- ============================================================ -->
+<!-- Dokumen untuk: <?= htmlspecialchars($r['kode_pendaftaran']) ?> -->
+<!-- ============================================================ -->
+<?php render_docs($r, $jenis); ?>
+<?php endforeach; ?>
 
 </body>
 </html>

@@ -8,13 +8,77 @@ session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax']);
 session_start();
 require_once __DIR__ . '/config.php';
 
+function client_ip() {
+    return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+}
+
+function log_login_attempt($pdo, $username, $berhasil) {
+    try {
+        $stmt = $pdo->prepare('INSERT INTO admin_login_log (username, ip, berhasil) VALUES (:u, :ip, :b)');
+        $stmt->execute(['u' => $username, 'ip' => client_ip(), 'b' => $berhasil ? 1 : 0]);
+    } catch (Exception $e) {
+        // Tabel admin_login_log mungkin belum diimport - jangan sampai gagal log menghalangi login.
+    }
+}
+
+function is_rate_limited($pdo) {
+    $maxGagal = 5;
+    $windowMenit = 15;
+    try {
+        $stmt = $pdo->prepare("SELECT COUNT(*) c FROM admin_login_log WHERE ip = :ip AND berhasil = 0 AND waktu > (NOW() - INTERVAL $windowMenit MINUTE)");
+        $stmt->execute(['ip' => client_ip()]);
+        $row = $stmt->fetch();
+        return ($row['c'] ?? 0) >= $maxGagal;
+    } catch (Exception $e) {
+        return false; // tabel belum ada / DB bermasalah -> jangan blokir user krn error internal
+    }
+}
+
 // ---------- Login ----------
+$loginError = null;
 if (isset($_POST['login_username'], $_POST['login_password'])) {
-    if ($_POST['login_username'] === ADMIN_USERNAME && $_POST['login_password'] === ADMIN_PASSWORD) {
-        session_regenerate_id(true);
-        $_SESSION['petra_admin'] = true;
-    } else {
-        $loginError = 'Username atau password salah.';
+    try {
+        $pdo = get_db();
+        if (is_rate_limited($pdo)) {
+            $loginError = 'Terlalu banyak percobaan gagal login dari perangkat ini. Coba lagi dalam beberapa menit.';
+        } else {
+            $u = trim($_POST['login_username']);
+            $p = $_POST['login_password'];
+            $ok = false;
+            $displayName = $u;
+
+            // 1) akun per-staff di tabel admin_users
+            try {
+                $stmt = $pdo->prepare('SELECT * FROM admin_users WHERE username = :u');
+                $stmt->execute(['u' => $u]);
+                $acc = $stmt->fetch();
+                if ($acc && password_verify($p, $acc['password_hash'])) {
+                    $ok = true;
+                    $displayName = $acc['nama_tampilan'];
+                }
+            } catch (Exception $e) {
+                // tabel admin_users belum ada (instalasi lama) - lanjut ke fallback bootstrap
+            }
+
+            // 2) fallback: akun bootstrap tunggal dari config.php
+            if (!$ok && $u === ADMIN_USERNAME && $p === ADMIN_PASSWORD) {
+                $ok = true;
+                $displayName = 'Admin';
+            }
+
+            log_login_attempt($pdo, $u, $ok);
+
+            if ($ok) {
+                session_regenerate_id(true);
+                $_SESSION['petra_admin'] = true;
+                $_SESSION['petra_admin_user'] = $u;
+                $_SESSION['petra_admin_nama'] = $displayName;
+            } else {
+                $loginError = 'Username atau password salah.';
+            }
+        }
+    } catch (Exception $e) {
+        $loginError = 'Gagal terhubung ke database. Server database sedang sibuk, coba lagi sesaat lagi.';
     }
 }
 if (isset($_GET['logout'])) {
@@ -23,20 +87,66 @@ if (isset($_GET['logout'])) {
     exit;
 }
 
-// ---------- Update status ----------
+// ---------- Update status pendaftar ----------
 if (!empty($_SESSION['petra_admin']) && isset($_POST['update_id'])) {
     try {
         $pdo = get_db();
+        $targetId = (int) $_POST['update_id'];
+        $newStatus = $_POST['status'];
+        $catatan = trim(strip_tags($_POST['catatan_admin'] ?? ''));
+
         $stmt = $pdo->prepare('UPDATE pendaftaran SET status = :status, catatan_admin = :catatan WHERE id = :id');
-        $stmt->execute([
-            'status' => $_POST['status'],
-            'catatan' => trim(strip_tags($_POST['catatan_admin'] ?? '')),
-            'id' => (int) $_POST['update_id'],
-        ]);
+        $stmt->execute(['status' => $newStatus, 'catatan' => $catatan, 'id' => $targetId]);
+
+        try {
+            $log = $pdo->prepare('INSERT INTO admin_aktivitas_log (username, aksi, pendaftaran_id) VALUES (:u, :a, :id)');
+            $log->execute([
+                'u' => $_SESSION['petra_admin_user'] ?? '?',
+                'a' => 'Ubah status pendaftar #' . $targetId . ' -> ' . $newStatus,
+                'id' => $targetId,
+            ]);
+        } catch (Exception $e) {
+            // tabel admin_aktivitas_log belum ada - abaikan, status tetap tersimpan
+        }
+
         header('Location: admin.php?updated=1');
         exit;
     } catch (Exception $e) {
         $dbError = 'Gagal menyimpan perubahan status. Server database sedang sibuk, coba lagi sesaat lagi.';
+    }
+}
+
+// ---------- Kelola admin: tambah akun ----------
+$adminMgmtError = null;
+if (!empty($_SESSION['petra_admin']) && isset($_POST['add_admin_username'])) {
+    try {
+        $pdo = get_db();
+        $newUser = trim($_POST['add_admin_username']);
+        $newNama = trim($_POST['add_admin_nama'] ?? '') ?: $newUser;
+        $newPass = $_POST['add_admin_password'] ?? '';
+        if ($newUser === '' || strlen($newPass) < 8) {
+            $adminMgmtError = 'Username wajib diisi & password minimal 8 karakter.';
+        } else {
+            $stmt = $pdo->prepare('INSERT INTO admin_users (username, password_hash, nama_tampilan) VALUES (:u, :h, :n)');
+            $stmt->execute(['u' => $newUser, 'h' => password_hash($newPass, PASSWORD_DEFAULT), 'n' => $newNama]);
+            header('Location: admin.php?admin_added=1');
+            exit;
+        }
+    } catch (Exception $e) {
+        $adminMgmtError = 'Gagal menambah akun admin. Kemungkinan username sudah dipakai, atau tabel admin_users belum diimport (lihat schema.sql).';
+    }
+}
+
+// ---------- Kelola admin: hapus akun ----------
+if (!empty($_SESSION['petra_admin']) && isset($_GET['delete_admin_id'])) {
+    try {
+        $pdo = get_db();
+        $stmt = $pdo->prepare('DELETE FROM admin_users WHERE id = :id');
+        $stmt->execute(['id' => (int) $_GET['delete_admin_id']]);
+        header('Location: admin.php?admin_deleted=1');
+        exit;
+    } catch (Exception $e) {
+        $adminMgmtError = 'Gagal menghapus akun admin.';
     }
 }
 
@@ -65,14 +175,40 @@ if (empty($_SESSION['petra_admin'])):
 exit;
 endif;
 
-// ---------- Data list ----------
-$rows = [];
-$listError = null;
+// ---------- Siapkan koneksi utk sisa halaman ----------
+$pdo = null;
+$connError = null;
 try {
     $pdo = get_db();
-    $rows = $pdo->query('SELECT * FROM pendaftaran ORDER BY tanggal_daftar DESC')->fetchAll();
 } catch (Exception $e) {
-    $listError = 'Gagal memuat data pendaftar dari database. Server database sedang sibuk atau tidak merespon — coba muat ulang halaman ini dalam beberapa saat.';
+    $connError = 'Tidak bisa terhubung ke database. Server database sedang sibuk atau tidak merespon — coba muat ulang halaman ini dalam beberapa saat.';
+}
+
+$rows = [];
+$listError = null;
+if ($pdo && !$connError) {
+    try {
+        $rows = $pdo->query('SELECT * FROM pendaftaran ORDER BY tanggal_daftar DESC')->fetchAll();
+    } catch (Exception $e) {
+        $listError = 'Gagal memuat data pendaftar dari database. Coba muat ulang halaman ini dalam beberapa saat.';
+    }
+}
+
+$adminList = [];
+$adminListError = null;
+if ($pdo && !$connError) {
+    try {
+        $adminList = $pdo->query('SELECT * FROM admin_users ORDER BY dibuat_pada DESC')->fetchAll();
+    } catch (Exception $e) {
+        $adminListError = 'Tabel admin_users belum tersedia — import ulang schema.sql lewat phpMyAdmin untuk mengaktifkan fitur multi-admin.';
+    }
+}
+
+$aktivitasList = [];
+$loginLogList = [];
+if ($pdo && !$connError) {
+    try { $aktivitasList = $pdo->query('SELECT * FROM admin_aktivitas_log ORDER BY waktu DESC LIMIT 30')->fetchAll(); } catch (Exception $e) {}
+    try { $loginLogList = $pdo->query('SELECT * FROM admin_login_log ORDER BY waktu DESC LIMIT 30')->fetchAll(); } catch (Exception $e) {}
 }
 ?>
 <!DOCTYPE html>
@@ -81,8 +217,9 @@ try {
 <style>
   *{box-sizing:border-box;}
   body{font-family:system-ui,sans-serif; background:#EEF1F9; margin:0; color:#141E3C;}
-  header{background:#0F1F52; color:#fff; padding:16px 18px; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0;}
+  header{background:#0F1F52; color:#fff; padding:16px 18px; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:60;}
   header h1{font-size:16px; margin:0;}
+  header .who{font-size:12px; color:#B9C4E8; margin-top:2px;}
   header a{color:#F6D9A0; font-size:13px; text-decoration:none;}
   main{max-width:900px; margin:0 auto; padding:16px;}
   .card{background:#fff; border-radius:12px; padding:16px; margin-bottom:14px; border:1px solid #DCE1F0;}
@@ -102,22 +239,96 @@ try {
   form.status-form select, form.status-form input{padding:8px; border-radius:7px; border:1.5px solid #DCE1F0; font-size:13px;}
   form.status-form button{padding:8px 14px; background:#0F1F52; color:#fff; border:none; border-radius:7px; font-size:13px;}
   .empty{text-align:center; color:#4B5468; padding:40px;}
+  .bulk-bar{background:#fff; border:1px solid #DCE1F0; border-radius:12px; padding:10px 14px; margin-bottom:14px; display:flex; align-items:center; gap:14px; font-size:13.5px;}
+  .bulk-bar button{background:#0F1F52; color:#fff; border:none; border-radius:7px; padding:8px 14px; font-size:13px; font-weight:600;}
+  .bulk-bar button:disabled{opacity:.4;}
+  .pilih-cetak{margin-right:8px; transform:scale(1.15);}
+  .mgmt-card summary{display:flex; align-items:center; gap:6px;}
+  .log-row{font-size:12.5px; padding:5px 0; border-bottom:1px solid #EEF1F9;}
+  .log-row:last-child{border-bottom:none;}
+  .ok-text{color:#2F6B4F;}
+  .fail-text{color:#D6242A;}
+  .add-admin-form{display:flex; flex-direction:column; gap:8px; max-width:340px; margin-top:10px;}
+  .add-admin-form input{padding:9px; border-radius:7px; border:1.5px solid #DCE1F0; font-size:13px;}
+  .add-admin-form button{padding:9px; background:#0F1F52; color:#fff; border:none; border-radius:7px; font-size:13px; font-weight:600;}
 </style></head><body>
 <header>
-  <h1>Daftar Pendaftaran — SSB PETRA (<?= count($rows) ?>)</h1>
+  <div>
+    <h1>Daftar Pendaftaran — SSB PETRA (<?= count($rows) ?>)</h1>
+    <div class="who">Login sebagai <?= htmlspecialchars($_SESSION['petra_admin_nama'] ?? 'Admin') ?></div>
+  </div>
   <a href="?logout=1">Keluar</a>
 </header>
 <main>
+<?php if (!empty($connError)): ?>
+  <div class="empty" style="color:#D6242A;"><?= htmlspecialchars($connError) ?></div>
+<?php endif; ?>
+
+<details class="card mgmt-card">
+  <summary>⚙️ Kelola Akun Admin (<?= count($adminList) ?>)</summary>
+  <?php if ($adminListError): ?>
+    <p style="color:#D6242A; font-size:13px;"><?= htmlspecialchars($adminListError) ?></p>
+  <?php else: ?>
+    <?php if ($adminMgmtError): ?><div class="err" style="color:#D6242A; font-size:13px; margin:8px 0;"><?= htmlspecialchars($adminMgmtError) ?></div><?php endif; ?>
+    <?php if (!$adminList): ?>
+      <p style="color:#4B5468; font-size:13px; margin-top:8px;">Belum ada akun tambahan — masih memakai akun bootstrap dari <code>config.php</code>.</p>
+    <?php else: foreach ($adminList as $a): ?>
+      <div class="log-row" style="display:flex; justify-content:space-between; align-items:center;">
+        <span><b><?= htmlspecialchars($a['nama_tampilan']) ?></b> (<?= htmlspecialchars($a['username']) ?>) — dibuat <?= htmlspecialchars($a['dibuat_pada']) ?></span>
+        <a href="?delete_admin_id=<?= (int)$a['id'] ?>" onclick="return confirm('Hapus akun ini?')" style="color:#D6242A; font-size:12.5px;">Hapus</a>
+      </div>
+    <?php endforeach; endif; ?>
+
+    <form method="post" class="add-admin-form">
+      <input type="text" name="add_admin_nama" placeholder="Nama tampilan (mis. Budi)" required>
+      <input type="text" name="add_admin_username" placeholder="Username baru" required>
+      <input type="password" name="add_admin_password" placeholder="Password (min 8 karakter)" minlength="8" required>
+      <button type="submit">+ Tambah Akun Admin</button>
+    </form>
+  <?php endif; ?>
+</details>
+
+<details class="card mgmt-card">
+  <summary>🕒 Log Aktivitas &amp; Login</summary>
+  <div style="font-weight:bold; margin:14px 0 4px; font-size:13px;">Aktivitas terakhir</div>
+  <?php if (!$aktivitasList): ?>
+    <p style="color:#4B5468; font-size:13px;">Belum ada aktivitas tercatat.</p>
+  <?php else: foreach ($aktivitasList as $a): ?>
+    <div class="log-row"><b><?= htmlspecialchars($a['username']) ?></b> — <?= htmlspecialchars($a['aksi']) ?> <span style="color:#4B5468;">(<?= htmlspecialchars($a['waktu']) ?>)</span></div>
+  <?php endforeach; endif; ?>
+
+  <div style="font-weight:bold; margin:14px 0 4px; font-size:13px;">Percobaan login terakhir</div>
+  <?php if (!$loginLogList): ?>
+    <p style="color:#4B5468; font-size:13px;">Belum ada catatan login.</p>
+  <?php else: foreach ($loginLogList as $l): ?>
+    <div class="log-row">
+      <b><?= htmlspecialchars($l['username']) ?></b>
+      — <span class="<?= $l['berhasil'] ? 'ok-text' : 'fail-text' ?>"><?= $l['berhasil'] ? 'berhasil' : 'gagal' ?></span>
+      dari IP <?= htmlspecialchars($l['ip']) ?>
+      <span style="color:#4B5468;">(<?= htmlspecialchars($l['waktu']) ?>)</span>
+    </div>
+  <?php endforeach; endif; ?>
+</details>
+
 <?php if (!empty($dbError)): ?>
   <div class="empty" style="color:#D6242A;"><?= htmlspecialchars($dbError) ?></div>
 <?php endif; ?>
+
 <?php if (!empty($listError)): ?>
   <div class="empty" style="color:#D6242A;"><?= htmlspecialchars($listError) ?></div>
-<?php elseif (!$rows): ?>
+<?php elseif ($rows): ?>
+  <div class="bulk-bar">
+    <label><input type="checkbox" id="selectAll"> Pilih semua</label>
+    <button type="button" id="btnCetakTerpilih" disabled>🖨️ Cetak Terpilih (<span id="selCount">0</span>)</button>
+  </div>
+<?php endif; ?>
+
+<?php if (empty($listError) && !$rows): ?>
   <div class="empty">Belum ada pendaftaran masuk.</div>
-<?php else: foreach ($rows as $r): ?>
+<?php elseif (empty($listError)): foreach ($rows as $r): ?>
   <details class="card">
     <summary>
+      <input type="checkbox" class="pilih-cetak" value="<?= (int)$r['id'] ?>" onclick="event.stopPropagation()">
       <?= htmlspecialchars($r['nama_lengkap']) ?>
       <span class="status-pill st-<?= htmlspecialchars($r['status']) ?>"><?= htmlspecialchars($r['status']) ?></span>
       <div class="meta"><?= htmlspecialchars($r['kode_pendaftaran']) ?> — <?= htmlspecialchars($r['tanggal_daftar']) ?></div>
@@ -170,4 +381,29 @@ try {
   </details>
 <?php endforeach; endif; ?>
 </main>
+<script>
+(function(){
+  var boxes = document.querySelectorAll('.pilih-cetak');
+  var btn = document.getElementById('btnCetakTerpilih');
+  var countEl = document.getElementById('selCount');
+  var selectAll = document.getElementById('selectAll');
+
+  function updateSelCount(){
+    var n = document.querySelectorAll('.pilih-cetak:checked').length;
+    if (countEl) countEl.textContent = n;
+    if (btn) btn.disabled = n === 0;
+  }
+  boxes.forEach(function(cb){ cb.addEventListener('change', updateSelCount); });
+  if (selectAll) selectAll.addEventListener('change', function(){
+    boxes.forEach(function(cb){ cb.checked = selectAll.checked; });
+    updateSelCount();
+  });
+  if (btn) btn.addEventListener('click', function(){
+    var ids = Array.prototype.slice.call(document.querySelectorAll('.pilih-cetak:checked')).map(function(cb){ return cb.value; });
+    if (!ids.length) return;
+    window.open('cetak.php?ids=' + ids.join(',') + '&jenis=semua', '_blank');
+  });
+  updateSelCount();
+})();
+</script>
 </body></html>

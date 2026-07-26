@@ -56,9 +56,9 @@ Orang tua isi index.html (5 langkah, di HP)
   (`cetak.php`) saat ini pakai alamat ayah → ibu → wali sbg fallback karena
   form tidak mengumpulkan alamat siswa secara terpisah. Perlu keputusan:
   tambah field baru di `index.html`/`submit.php`/`schema.sql`, atau biarkan.
-- **Cetak massal (bulk print)** belum ada — `cetak.php` baru bisa 1 pendaftar per klik.
-- **Keamanan admin**: 1 username/password tetap, tanpa rate limiting/log aktivitas.
-  Cukup untuk skala kecil.
+- ~~**Cetak massal (bulk print)** belum ada~~ — **sudah ditambahkan**, lihat di bawah.
+- ~~**Keamanan admin**: 1 username/password tetap, tanpa rate limiting/log aktivitas~~ —
+  **sudah ditambahkan** (multi-akun, rate limiting, log aktivitas), lihat di bawah.
 - **Backup**: aktifkan Backup otomatis Hostinger (hPanel → Backups) untuk `uploads/`.
 
 ## Perbaikan yang sudah dilakukan di repo ini
@@ -72,3 +72,29 @@ Orang tua isi index.html (5 langkah, di HP)
   ("coba lagi sesaat lagi") alih-alih halaman blank/fatal error.
 - Session admin: `session_regenerate_id()` setelah login berhasil + cookie
   `HttpOnly`/`SameSite=Lax` (pengerasan keamanan session).
+- **Multi-akun admin**: tabel baru `admin_users` — tiap staff bisa punya
+  username/password sendiri (password di-hash, bukan plain text), dikelola
+  lewat menu "⚙️ Kelola Akun Admin" di `admin.php` setelah login. Akun
+  `ADMIN_USERNAME`/`ADMIN_PASSWORD` di `config.php` tetap berfungsi sebagai
+  akun bootstrap/cadangan untuk membuat akun-akun staff pertama kali.
+- **Rate limiting login**: setelah 5x gagal login beruntun dari IP yang sama
+  dalam 15 menit, percobaan login diblokir sementara (tabel `admin_login_log`).
+- **Log aktivitas**: setiap perubahan status pendaftar dicatat (siapa, kapan,
+  ke status apa) di tabel `admin_aktivitas_log`, ditampilkan di menu
+  "🕒 Log Aktivitas & Login" — supaya admin bisa saling pantau.
+- **Cetak massal**: di `admin.php` sekarang ada checkbox di tiap pendaftar +
+  tombol "🖨️ Cetak Terpilih" untuk membuka satu halaman cetak berisi dokumen
+  semua pendaftar yang dicentang sekaligus (`cetak.php?ids=1,2,3`), siap
+  "Simpan sebagai PDF" satu kali untuk semua. Link cetak satu-per-satu yang
+  lama (`cetak.php?id=...`) tetap berfungsi seperti biasa.
+
+### ⚠️ Wajib dilakukan di server setelah update ini
+
+`schema.sql` bertambah 3 tabel baru (`admin_users`, `admin_login_log`,
+`admin_aktivitas_log`). **Import ulang `schema.sql` lewat phpMyAdmin**
+(tab Import, `CREATE TABLE IF NOT EXISTS` — aman, tidak akan menghapus data
+pendaftar yang sudah ada) supaya fitur multi-admin, rate limiting, dan log
+aktivitas aktif. Selama tabel-tabel ini belum diimport, login lama
+(`ADMIN_USERNAME`/`ADMIN_PASSWORD` di `config.php`) tetap berfungsi seperti
+biasa — hanya menu "Kelola Akun Admin"/"Log Aktivitas" yang akan menampilkan
+pesan bahwa tabelnya belum tersedia.

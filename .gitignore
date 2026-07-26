@@ -1,0 +1,11 @@
+node_modules/
+.DS_Store
+
+# Kredensial nyata - JANGAN pernah commit. Buat config.php di server
+# dari config.sample.php dan isi nilai asli hanya di server.
+pendaftaran/config.php
+
+# Berkas pribadi pendaftar (akte lahir, KK, foto, tanda tangan) - jangan masuk repo
+pendaftaran/uploads/*
+!pendaftaran/uploads/.htaccess
+!pendaftaran/uploads/.gitkeep

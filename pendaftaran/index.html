@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Formulir Pendaftaran — SSB PETRA Sentani</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --pitch-900:#0F1F52;
+    --pitch-700:#1A3A8F;
+    --pitch-500:#2C56B8;
+    --grass-400:#3E8F5D;
+    --cone-500:#F0B429;
+    --cone-600:#D69A0C;
+    --paper-0:#FAFBFE;
+    --paper-100:#EEF1F9;
+    --line-200:#DCE1F0;
+    --ink-900:#141E3C;
+    --ink-600:#4B5468;
+    --white:#ffffff;
+    --danger:#D6242A;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper-0);
+    color:var(--ink-900);
+    font-family:'Inter',system-ui,sans-serif;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:40px;
+  }
+  h1,h2,h3,legend{font-family:'Oswald',sans-serif; letter-spacing:.01em;}
+
+  /* ---------- Header / pitch stripe ---------- */
+  .field-header{
+    background:
+      repeating-linear-gradient(90deg, rgba(255,255,255,.05) 0 40px, rgba(255,255,255,0) 40px 80px),
+      linear-gradient(160deg, var(--pitch-900), var(--pitch-700) 70%);
+    color:var(--paper-0);
+    padding:28px 20px 22px;
+    position:relative;
+    overflow:hidden;
+  }
+  .field-header::after{
+    content:"";
+    position:absolute; right:-40px; bottom:-60px;
+    width:180px; height:180px; border-radius:50%;
+    border:2px solid rgba(255,255,255,.12);
+  }
+  .crest{
+    display:flex; align-items:center; justify-content:center;
+    width:64px; height:64px; border-radius:16px;
+    background:#fff; padding:7px;
+    box-shadow:0 4px 14px rgba(0,0,0,.18);
+    margin-bottom:14px;
+  }
+  .crest img{width:100%; height:100%; object-fit:contain; display:block;}
+  .field-header h1{font-size:22px; font-weight:700; margin:0 0 4px; text-transform:uppercase;}
+  .field-header p{margin:0; font-size:13.5px; color:#CFE0D5; max-width:46ch;}
+
+  /* ---------- Progress ---------- */
+  .progress-wrap{
+    position:sticky; top:0; z-index:20;
+    background:var(--paper-0);
+    border-bottom:1px solid var(--line-200);
+    padding:12px 16px 10px;
+  }
+  .progress-track{display:flex; gap:6px;}
+  .progress-seg{flex:1; height:5px; border-radius:3px; background:var(--line-200); overflow:hidden;}
+  .progress-seg > i{display:block; height:100%; width:0%; background:var(--cone-500); transition:width .3s ease;}
+  .progress-seg.done > i{width:100%;}
+  .progress-seg.active > i{width:50%;}
+  .progress-label{margin-top:8px; font-size:12px; color:var(--ink-600); display:flex; justify-content:space-between;}
+  .progress-label b{color:var(--pitch-700); font-weight:600;}
+
+  /* ---------- Layout ---------- */
+  main{max-width:640px; margin:0 auto; padding:0 16px;}
+  .step{display:none; padding-top:22px;}
+  .step.active{display:block; animation:fade .25s ease;}
+  @keyframes fade{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;}}
+
+  .step-eyebrow{
+    display:flex; align-items:center; gap:10px; margin-bottom:4px;
+  }
+  .step-num{
+    width:30px; height:30px; border-radius:50%;
+    background:var(--pitch-900); color:#fff;
+    font-family:'Oswald',sans-serif; font-weight:600; font-size:14px;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .step h2{font-size:19px; margin:0; text-transform:uppercase; color:var(--pitch-900);}
+  .step-desc{font-size:13.5px; color:var(--ink-600); margin:6px 0 20px; padding-left:40px;}
+
+  .card{
+    background:var(--white);
+    border:1px solid var(--line-200);
+    border-radius:var(--radius);
+    padding:18px 16px;
+    margin-bottom:16px;
+  }
+  .card h3{font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--pitch-500); margin:0 0 14px;}
+
+  .field{margin-bottom:14px;}
+  .field:last-child{margin-bottom:0;}
+  label{
+    display:block; font-size:13px; font-weight:600; color:var(--ink-900); margin-bottom:6px;
+  }
+  label .opt{font-weight:400; color:var(--ink-600); font-size:12px;}
+  input[type=text],input[type=tel],input[type=number],input[type=date],select,textarea{
+    width:100%; padding:12px 13px; font-size:15.5px; font-family:inherit; color:var(--ink-900);
+    background:var(--paper-0); border:1.5px solid var(--line-200); border-radius:10px;
+    -webkit-appearance:none; appearance:none;
+  }
+  textarea{resize:vertical; min-height:70px;}
+  input:focus,select:focus,textarea:focus{
+    outline:none; border-color:var(--pitch-500); background:#fff;
+    box-shadow:0 0 0 3px rgba(47,107,79,.12);
+  }
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .hint{font-size:11.5px; color:var(--ink-600); margin-top:5px;}
+
+  .radio-group{display:flex; flex-wrap:wrap; gap:8px;}
+  .radio-chip{position:relative;}
+  .radio-chip input{position:absolute; opacity:0; inset:0; cursor:pointer;}
+  .radio-chip span{
+    display:block; padding:10px 16px; border:1.5px solid var(--line-200); border-radius:999px;
+    font-size:13.5px; font-weight:500; color:var(--ink-900); background:var(--paper-0);
+  }
+  .radio-chip input:checked + span{
+    background:var(--pitch-900); border-color:var(--pitch-900); color:#fff;
+  }
+
+  /* ---------- Upload cards ---------- */
+  .upload-item{
+    border:1.5px dashed var(--line-200); border-radius:12px; padding:14px;
+    margin-bottom:12px; background:var(--paper-0);
+  }
+  .upload-item.filled{border-color:var(--grass-400); background:#F1F8F3;}
+  .upload-item .up-top{display:flex; align-items:flex-start; justify-content:space-between; gap:10px;}
+  .upload-item .up-title{font-size:14px; font-weight:600;}
+  .upload-item .up-title .req{color:var(--cone-600); font-weight:700;}
+  .upload-item .up-note{font-size:12px; color:var(--ink-600); margin-top:2px;}
+  .upload-item .up-status{font-size:12px; font-weight:600; color:var(--grass-400); white-space:nowrap;}
+  .upload-btn{
+    margin-top:10px; display:inline-flex; align-items:center; gap:8px;
+    background:#fff; border:1.5px solid var(--pitch-500); color:var(--pitch-700);
+    padding:9px 14px; border-radius:9px; font-size:13px; font-weight:600; cursor:pointer;
+  }
+  .upload-item input[type=file]{display:none;}
+  .file-name{font-size:12px; color:var(--ink-600); margin-top:8px; word-break:break-all;}
+
+  /* ---------- Consent blocks ---------- */
+  .consent-block{margin-bottom:18px;}
+  .consent-block h3{font-size:14px; color:var(--pitch-900); margin:0 0 6px; text-transform:none; letter-spacing:0;}
+  .consent-text{
+    font-size:12.5px; color:var(--ink-600); background:var(--paper-0);
+    border:1px solid var(--line-200); border-radius:10px; padding:12px; max-height:150px; overflow-y:auto;
+  }
+  .consent-text ul{margin:6px 0 0; padding-left:18px;}
+  .consent-text li{margin-bottom:4px;}
+  .agree-row{display:flex; align-items:flex-start; gap:10px; margin-top:10px; cursor:pointer;}
+  .agree-row input{width:20px; height:20px; margin-top:1px; accent-color:var(--pitch-700); flex-shrink:0;}
+  .agree-row span{font-size:13px; font-weight:500;}
+
+  /* ---------- Signature ---------- */
+  .sig-wrap{
+    border:1.5px solid var(--line-200); border-radius:12px; background:#fff; overflow:hidden;
+  }
+  canvas#sigPad{display:block; width:100%; height:180px; touch-action:none; background:
+     repeating-linear-gradient(0deg, transparent 0 29px, #EEE 29px 30px);}
+  .sig-actions{display:flex; justify-content:space-between; align-items:center; padding:8px 12px; background:var(--paper-0); border-top:1px solid var(--line-200);}
+  .sig-actions button{
+    background:none; border:none; color:var(--cone-600); font-weight:600; font-size:13px; cursor:pointer; padding:6px;
+  }
+  .sig-hint{font-size:11.5px; color:var(--ink-600); margin-top:6px;}
+
+  /* ---------- Nav buttons ---------- */
+  .nav-row{display:flex; gap:10px; margin-top:8px;}
+  .btn{
+    flex:1; padding:14px 16px; border-radius:11px; font-size:15px; font-weight:600;
+    border:none; cursor:pointer; font-family:'Inter',sans-serif;
+  }
+  .btn-primary{background:var(--cone-500); color:var(--pitch-900); font-weight:700;}
+  .btn-primary:active{background:var(--cone-600);}
+  .btn-ghost{background:var(--white); color:var(--pitch-900); border:1.5px solid var(--line-200);}
+  .btn:disabled{opacity:.5;}
+
+  .error-msg{color:var(--danger); font-size:12px; margin-top:5px; display:none;}
+  .field.invalid input,.field.invalid select,.field.invalid textarea{border-color:var(--danger); background:#FCF3F1;}
+  .field.invalid .error-msg{display:block;}
+
+  .biaya-box{
+    background:var(--pitch-900); color:#fff; border-radius:var(--radius); padding:16px;
+    margin-bottom:16px;
+  }
+  .biaya-box .amt{font-family:'Oswald',sans-serif; font-size:24px; font-weight:700; color:#F6D9A0;}
+  .biaya-box ul{margin:8px 0 0; padding-left:18px; font-size:12.5px; color:#D9E5DD;}
+
+  /* ---------- Success ---------- */
+  #successScreen{display:none; text-align:center; padding:60px 20px;}
+  #successScreen .badge{
+    width:64px; height:64px; border-radius:50%; background:var(--grass-400); color:#fff;
+    display:flex; align-items:center; justify-content:center; margin:0 auto 18px; font-size:30px;
+  }
+  #successScreen h2{font-size:20px; color:var(--pitch-900);}
+  #successScreen p{color:var(--ink-600); font-size:14px;}
+  #successScreen .kode{font-family:'Oswald',sans-serif; font-size:22px; color:var(--cone-600); margin:14px 0;}
+
+  #globalError{
+    display:none; background:#FCEFEC; border:1.5px solid var(--danger); color:var(--danger);
+    padding:12px 14px; border-radius:10px; font-size:13px; margin:16px 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="field-header">
+  <span class="crest"><img src="assets/petra-logo.png" alt="Logo PETRA Football Club"></span>
+  <h1>Formulir Pendaftaran Siswa</h1>
+  <p>Sekolah Sepakbola PETRA — Sentani, Papua. Isi seluruh data di bawah ini, lampirkan dokumen yang diminta, lalu kirim langsung dari HP Anda.</p>
+</div>
+
+<div class="progress-wrap">
+  <div class="progress-track" id="progressTrack"></div>
+  <div class="progress-label"><span>Langkah <b id="stepNow">1</b> dari <b id="stepTotal">5</b></span><span id="stepTitle"></span></div>
+</div>
+
+<main>
+<form id="regForm" novalidate>
+
+  <!-- STEP 1: BIODATA SISWA -->
+  <section class="step active" data-step="1">
+    <div class="step-eyebrow"><span class="step-num">1</span><h2>Data Siswa / Pemain</h2></div>
+    <p class="step-desc">Diisi sesuai dokumen resmi (akte lahir / KK / KIA).</p>
+
+    <div class="card">
+      <h3>Identitas</h3>
+      <div class="field">
+        <label>Nama Lengkap <span class="opt">wajib</span></label>
+        <input type="text" name="nama_lengkap" required>
+        <div class="error-msg">Nama lengkap wajib diisi.</div>
+      </div>
+      <div class="field">
+        <label>Nama Panggilan</label>
+        <input type="text" name="nama_panggilan">
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>NIK Siswa</label>
+          <input type="text" name="nik_siswa" inputmode="numeric" maxlength="16">
+        </div>
+        <div class="field">
+          <label>NISN</label>
+          <input type="text" name="nisn" inputmode="numeric" maxlength="10">
+        </div>
+      </div>
+      <div class="field">
+        <label>Jenis Kelamin <span class="opt">wajib</span></label>
+        <div class="radio-group" data-required="jenis_kelamin">
+          <label class="radio-chip"><input type="radio" name="jenis_kelamin" value="Laki-laki" required><span>Laki-laki</span></label>
+          <label class="radio-chip"><input type="radio" name="jenis_kelamin" value="Perempuan"><span>Perempuan</span></label>
+        </div>
+        <div class="error-msg">Pilih jenis kelamin.</div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Tempat Lahir</label>
+          <input type="text" name="tempat_lahir">
+        </div>
+        <div class="field">
+          <label>Tanggal Lahir</label>
+          <input type="date" name="tanggal_lahir">
+        </div>
+      </div>
+      <div class="field">
+        <label>Pendidikan / Sekolah saat ini</label>
+        <input type="text" name="pendidikan" placeholder="Contoh: Kelas 5 SD Negeri 1 Sentani">
+      </div>
+      <div class="field">
+        <label>Nomor HP (siswa / kontak yang bisa dihubungi)</label>
+        <input type="tel" name="nomor_hp_siswa" inputmode="tel">
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Profil Fisik &amp; Bermain</h3>
+      <div class="row2">
+        <div class="field">
+          <label>Tinggi Badan (cm)</label>
+          <input type="number" name="tinggi_badan" inputmode="decimal" step="0.1">
+        </div>
+        <div class="field">
+          <label>Berat Badan (kg)</label>
+          <input type="number" name="berat_badan" inputmode="decimal" step="0.1">
+        </div>
+      </div>
+      <div class="field">
+        <label>Golongan Darah</label>
+        <select name="golongan_darah">
+          <option value="">— Pilih —</option>
+          <option>A</option><option>B</option><option>AB</option><option>O</option><option>Tidak tahu</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Riwayat Operasi Tulang</label>
+        <textarea name="riwayat_operasi_tulang" placeholder="Tulis 'Tidak ada' jika belum pernah, atau sebutkan bagian tulang yang pernah dioperasi"></textarea>
+      </div>
+      <div class="field">
+        <label>Kaki Dominan</label>
+        <div class="radio-group">
+          <label class="radio-chip"><input type="radio" name="kaki_dominan" value="Kanan"><span>Kanan</span></label>
+          <label class="radio-chip"><input type="radio" name="kaki_dominan" value="Kiri"><span>Kiri</span></label>
+          <label class="radio-chip"><input type="radio" name="kaki_dominan" value="Dua-duanya"><span>Dua-duanya</span></label>
+        </div>
+      </div>
+      <div class="field">
+        <label>Posisi Bermain / Favorit</label>
+        <input type="text" name="posisi_bermain" placeholder="Contoh: Gelandang, Bek, Penyerang, Kiper">
+      </div>
+    </div>
+
+    <div class="nav-row">
+      <button type="button" class="btn btn-primary" data-next>Lanjut →</button>
+    </div>
+  </section>
+
+  <!-- STEP 2: ORANG TUA / WALI -->
+  <section class="step" data-step="2">
+    <div class="step-eyebrow"><span class="step-num">2</span><h2>Data Orang Tua &amp; Wali</h2></div>
+    <p class="step-desc">Data wali di bagian bawah akan dipakai untuk 3 surat pernyataan resmi PSSI.</p>
+
+    <div class="card">
+      <h3>Data Ayah</h3>
+      <div class="field"><label>Nama Ayah</label><input type="text" name="nama_ayah"></div>
+      <div class="field"><label>Alamat Rumah</label><textarea name="alamat_ayah"></textarea></div>
+      <div class="row2">
+        <div class="field"><label>Nomor HP</label><input type="tel" name="hp_ayah"></div>
+        <div class="field"><label>Pekerjaan</label><input type="text" name="pekerjaan_ayah"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Data Ibu</h3>
+      <div class="field"><label>Nama Ibu</label><input type="text" name="nama_ibu"></div>
+      <div class="field"><label>Alamat Rumah</label><textarea name="alamat_ibu"></textarea></div>
+      <div class="row2">
+        <div class="field"><label>Nomor HP</label><input type="tel" name="hp_ibu"></div>
+        <div class="field"><label>Pekerjaan</label><input type="text" name="pekerjaan_ibu"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Data Wali yang Mengisi &amp; Menandatangani Formulir</h3>
+      <div class="field">
+        <label>Hubungan dengan siswa</label>
+        <select name="wali_hubungan">
+          <option value="">— Pilih —</option>
+          <option>Ayah kandung</option><option>Ibu kandung</option><option>Wali</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Nama Lengkap Wali <span class="opt">wajib</span></label>
+        <input type="text" name="wali_nama_lengkap" required>
+        <div class="error-msg">Nama wali wajib diisi.</div>
+      </div>
+      <div class="field"><label>NIK Wali</label><input type="text" name="wali_nik" inputmode="numeric" maxlength="16"></div>
+      <div class="row2">
+        <div class="field"><label>Tempat Lahir Wali</label><input type="text" name="wali_tempat_lahir"></div>
+        <div class="field"><label>Tanggal Lahir Wali</label><input type="date" name="wali_tanggal_lahir"></div>
+      </div>
+      <div class="field"><label>Alamat Wali</label><textarea name="wali_alamat"></textarea></div>
+      <div class="field"><label>Nomor HP Wali <span class="opt">wajib</span></label><input type="tel" name="wali_hp" required>
+        <div class="error-msg">Nomor HP wali wajib diisi.</div>
+      </div>
+    </div>
+
+    <div class="nav-row">
+      <button type="button" class="btn btn-ghost" data-prev>← Kembali</button>
+      <button type="button" class="btn btn-primary" data-next>Lanjut →</button>
+    </div>
+  </section>
+
+  <!-- STEP 3: UPLOAD DOKUMEN -->
+  <section class="step" data-step="3">
+    <div class="step-eyebrow"><span class="step-num">3</span><h2>Upload Dokumen</h2></div>
+    <p class="step-desc">Foto atau scan dokumen, format JPG/PNG/PDF, maksimal 5&nbsp;MB per file.</p>
+
+    <div id="uploadList">
+      <div class="upload-item" data-field="file_akte_lahir">
+        <div class="up-top">
+          <div><div class="up-title">Akte Lahir <span class="req">*</span></div><div class="up-note">Copy akte kelahiran siswa</div></div>
+          <div class="up-status" hidden>✓ Terpasang</div>
+        </div>
+        <label class="upload-btn">📎 Pilih File<input type="file" name="file_akte_lahir" accept=".jpg,.jpeg,.png,.pdf"></label>
+        <div class="file-name"></div>
+      </div>
+
+      <div class="upload-item" data-field="file_ijazah_raport">
+        <div class="up-top">
+          <div><div class="up-title">Ijazah / Raport</div><div class="up-note">Copy ijazah atau raport terakhir</div></div>
+          <div class="up-status" hidden>✓ Terpasang</div>
+        </div>
+        <label class="upload-btn">📎 Pilih File<input type="file" name="file_ijazah_raport" accept=".jpg,.jpeg,.png,.pdf"></label>
+        <div class="file-name"></div>
+      </div>
+
+      <div class="upload-item" data-field="file_kartu_keluarga">
+        <div class="up-top">
+          <div><div class="up-title">Kartu Keluarga <span class="req">*</span></div><div class="up-note">Copy Kartu Keluarga (KK)</div></div>
+          <div class="up-status" hidden>✓ Terpasang</div>
+        </div>
+        <label class="upload-btn">📎 Pilih File<input type="file" name="file_kartu_keluarga" accept=".jpg,.jpeg,.png,.pdf"></label>
+        <div class="file-name"></div>
+      </div>
+
+      <div class="upload-item" data-field="file_raport_dalam">
+        <div class="up-top">
+          <div><div class="up-title">Raport Bagian Dalam</div><div class="up-note">Halaman data diri siswa + nilai semester terakhir</div></div>
+          <div class="up-status" hidden>✓ Terpasang</div>
+        </div>
+        <label class="upload-btn">📎 Pilih File<input type="file" name="file_raport_dalam" accept=".jpg,.jpeg,.png,.pdf"></label>
+        <div class="file-name"></div>
+      </div>
+
+      <div class="upload-item" data-field="file_nisn">
+        <div class="up-top">
+          <div><div class="up-title">Bukti NISN</div><div class="up-note">Print/screenshot NISN dari situs resmi</div></div>
+          <div class="up-status" hidden>✓ Terpasang</div>
+        </div>
+        <label class="upload-btn">📎 Pilih File<input type="file" name="file_nisn" accept=".jpg,.jpeg,.png,.pdf"></label>
+        <div class="file-name"></div>
+      </div>
+
+      <div class="upload-item" data-field="file_kia">
+        <div class="up-top">
+          <div><div class="up-title">Kartu Identitas Anak (KIA)</div><div class="up-note">Copy KIA siswa</div></div>
+          <div class="up-status" hidden>✓ Terpasang</div>
+        </div>
+        <label class="upload-btn">📎 Pilih File<input type="file" name="file_kia" accept=".jpg,.jpeg,.png,.pdf"></label>
+        <div class="file-name"></div>
+      </div>
+
+      <div class="upload-item" data-field="file_pas_foto">
+        <div class="up-top">
+          <div><div class="up-title">Pas Foto Siswa <span class="opt">opsional</span></div><div class="up-note">Foto terbaru, latar bebas</div></div>
+          <div class="up-status" hidden>✓ Terpasang</div>
+        </div>
+        <label class="upload-btn">📎 Pilih File<input type="file" name="file_pas_foto" accept=".jpg,.jpeg,.png"></label>
+        <div class="file-name"></div>
+      </div>
+    </div>
+    <div class="error-msg" id="uploadError" style="display:none;">Mohon lampirkan dokumen wajib (bertanda *) sebelum lanjut.</div>
+
+    <div class="nav-row">
+      <button type="button" class="btn btn-ghost" data-prev>← Kembali</button>
+      <button type="button" class="btn btn-primary" data-next>Lanjut →</button>
+    </div>
+  </section>
+
+  <!-- STEP 4: PERSETUJUAN & TANDA TANGAN -->
+  <section class="step" data-step="4">
+    <div class="step-eyebrow"><span class="step-num">4</span><h2>Pernyataan &amp; Tanda Tangan</h2></div>
+    <p class="step-desc">Isi resmi dari 3 dokumen persyaratan PSSI. Baca ringkasannya lalu centang jika setuju.</p>
+
+    <div class="card">
+      <div class="consent-block">
+        <h3>1. Persetujuan Data Pribadi</h3>
+        <div class="consent-text">
+          Dengan mencentang ini, saya menyatakan:
+          <ul>
+            <li>Bersedia memberikan data pribadi &amp; dokumen sesuai regulasi PSSI.</li>
+            <li>PSSI akan menggunakan data ini untuk registrasi stakeholder sepak bola di Indonesia.</li>
+            <li>Data dapat diteruskan ke PT Liga Indonesia Baru, AFF, AFC, dan FIFA untuk keperluan registrasi.</li>
+            <li>Hak saya sebagai subjek data dijamin sesuai UU Perlindungan Data Pribadi No. 27/2022.</li>
+            <li>Data yang saya berikan adalah sah, terkini, dan benar.</li>
+            <li>Saya dapat menghubungi PSSI bila ingin mengubah persetujuan ini di kemudian hari.</li>
+          </ul>
+        </div>
+        <label class="agree-row"><input type="checkbox" name="setuju_data_pribadi" value="1" required><span>Saya membaca dan menyetujui Persetujuan Data Pribadi di atas.</span></label>
+      </div>
+
+      <div class="consent-block">
+        <h3>2. Surat Pernyataan Pemain</h3>
+        <div class="consent-text">
+          Sebagai orang tua/wali, saya menyatakan bahwa anak saya belum pernah bergabung dengan klub anggota/calon anggota PSSI lain maupun klub dari luar Indonesia.
+        </div>
+        <label class="agree-row"><input type="checkbox" name="setuju_pernyataan_pemain" value="1" required><span>Saya menyatakan hal di atas adalah benar.</span></label>
+      </div>
+
+      <div class="consent-block">
+        <h3>3. Perjanjian Amatir</h3>
+        <div class="consent-text">
+          Saya mengizinkan anak saya mendaftar dan menjadi anggota SSB PETRA SENTANI dengan status "Pemain Amatir", serta bersedia memenuhi dan mematuhi seluruh peraturan yang berlaku di SSB PETRA SENTANI.
+        </div>
+        <label class="agree-row"><input type="checkbox" name="setuju_perjanjian_amatir" value="1" required><span>Saya menyetujui Perjanjian Amatir di atas.</span></label>
+      </div>
+      <div class="error-msg" id="consentError" style="display:none;">Ketiga pernyataan di atas wajib disetujui.</div>
+    </div>
+
+    <div class="card">
+      <h3>Tanda Tangan Digital Orang Tua / Wali</h3>
+      <div class="sig-wrap">
+        <canvas id="sigPad"></canvas>
+        <div class="sig-actions">
+          <span style="font-size:12px; color:var(--ink-600);">Gunakan jari untuk tanda tangan</span>
+          <button type="button" id="sigClear">Hapus &amp; Ulangi</button>
+        </div>
+      </div>
+      <div class="sig-hint">Tanda tangan ini mewakili tanda tangan basah pada ketiga surat pernyataan di atas.</div>
+      <div class="error-msg" id="sigError" style="display:none;">Mohon bubuhkan tanda tangan sebelum lanjut.</div>
+    </div>
+
+    <div class="nav-row">
+      <button type="button" class="btn btn-ghost" data-prev>← Kembali</button>
+      <button type="button" class="btn btn-primary" data-next>Lanjut →</button>
+    </div>
+  </section>
+
+  <!-- STEP 5: RINGKASAN & KIRIM -->
+  <section class="step" data-step="5">
+    <div class="step-eyebrow"><span class="step-num">5</span><h2>Periksa &amp; Kirim</h2></div>
+    <p class="step-desc">Pastikan data sudah benar sebelum dikirim.</p>
+
+    <div class="biaya-box">
+      <div style="font-size:12.5px; color:#CFE0D5;">Biaya Pendaftaran</div>
+      <div class="amt">Rp 2.500.000</div>
+      <ul>
+        <li>Registrasi database online</li>
+        <li>Seragam latihan 2 pasang</li>
+        <li>Kurikulum sepakbola (praktek &amp; teori) sesuai kelompok usia</li>
+      </ul>
+    </div>
+
+    <div class="card" id="summaryCard"></div>
+
+    <div id="globalError"></div>
+
+    <div class="nav-row">
+      <button type="button" class="btn btn-ghost" data-prev>← Kembali</button>
+      <button type="submit" class="btn btn-primary" id="submitBtn">Kirim Pendaftaran</button>
+    </div>
+  </section>
+
+</form>
+
+<div id="successScreen">
+  <div class="badge">✓</div>
+  <h2>Pendaftaran Terkirim!</h2>
+  <p>Terima kasih. Data Anda sudah kami terima dan akan diverifikasi oleh admin SSB PETRA Sentani.</p>
+  <div class="kode" id="kodeHasil"></div>
+  <p>Simpan kode di atas sebagai referensi. Admin akan menghubungi Anda melalui nomor HP wali untuk info pembayaran &amp; jadwal.</p>
+</div>
+
+</main>
+
+<script>
+(function(){
+  const totalSteps = 5;
+  let current = 1;
+  const form = document.getElementById('regForm');
+  const track = document.getElementById('progressTrack');
+  const stepTitles = {1:'Data Siswa',2:'Orang Tua',3:'Dokumen',4:'Pernyataan',5:'Kirim'};
+
+  for(let i=1;i<=totalSteps;i++){
+    const seg = document.createElement('div');
+    seg.className = 'progress-seg';
+    seg.innerHTML = '<i></i>';
+    track.appendChild(seg);
+  }
+
+  function renderProgress(){
+    const segs = track.querySelectorAll('.progress-seg');
+    segs.forEach((s,idx)=>{
+      const n = idx+1;
+      s.classList.toggle('done', n < current);
+      s.classList.toggle('active', n === current);
+    });
+    document.getElementById('stepNow').textContent = current;
+    document.getElementById('stepTitle').textContent = stepTitles[current];
+  }
+
+  function showStep(n){
+    document.querySelectorAll('.step').forEach(s=>{
+      s.classList.toggle('active', parseInt(s.dataset.step) === n);
+    });
+    current = n;
+    renderProgress();
+    window.scrollTo({top:0, behavior:'smooth'});
+    if(n === 5) buildSummary();
+  }
+
+  function validateStep(n){
+    let ok = true;
+    const stepEl = document.querySelector('.step[data-step="'+n+'"]');
+
+    stepEl.querySelectorAll('input[required], select[required], textarea[required]').forEach(el=>{
+      const field = el.closest('.field');
+      let valid = true;
+      if(el.type === 'radio'){
+        const group = stepEl.querySelectorAll('input[name="'+el.name+'"]');
+        valid = Array.from(group).some(r=>r.checked);
+      } else if(el.type === 'checkbox'){
+        valid = el.checked;
+      } else {
+        valid = el.value.trim() !== '';
+      }
+      if(field){ field.classList.toggle('invalid', !valid); }
+      if(!valid) ok = false;
+    });
+
+    if(n === 3){
+      const required = ['file_akte_lahir','file_kartu_keluarga'];
+      let missing = false;
+      required.forEach(name=>{
+        const input = form.querySelector('input[name="'+name+'"]');
+        if(!input.files || input.files.length === 0) missing = true;
+      });
+      document.getElementById('uploadError').style.display = missing ? 'block' : 'none';
+      if(missing) ok = false;
+    }
+
+    if(n === 4){
+      const boxes = stepEl.querySelectorAll('input[type=checkbox][required]');
+      const allChecked = Array.from(boxes).every(b=>b.checked);
+      document.getElementById('consentError').style.display = allChecked ? 'none' : 'block';
+      if(!allChecked) ok = false;
+
+      if(sigEmpty()){
+        document.getElementById('sigError').style.display = 'block';
+        ok = false;
+      } else {
+        document.getElementById('sigError').style.display = 'none';
+      }
+    }
+    return ok;
+  }
+
+  document.querySelectorAll('[data-next]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const n = parseInt(btn.closest('.step').dataset.step);
+      if(validateStep(n)) showStep(n+1);
+      else {
+        const invalid = btn.closest('.step').querySelector('.invalid, #uploadError[style*="block"], #consentError[style*="block"], #sigError[style*="block"]');
+        if(invalid) invalid.scrollIntoView({behavior:'smooth', block:'center'});
+      }
+    });
+  });
+  document.querySelectorAll('[data-prev]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const n = parseInt(btn.closest('.step').dataset.step);
+      showStep(n-1);
+    });
+  });
+
+  // ---- Upload UI feedback ----
+  document.querySelectorAll('.upload-item').forEach(item=>{
+    const input = item.querySelector('input[type=file]');
+    const nameEl = item.querySelector('.file-name');
+    const status = item.querySelector('.up-status');
+    input.addEventListener('change', ()=>{
+      const f = input.files[0];
+      if(f){
+        const sizeMB = (f.size/1024/1024);
+        if(sizeMB > 5){
+          alert('File "'+f.name+'" melebihi 5MB. Pilih file lain atau kompres dulu.');
+          input.value = '';
+          return;
+        }
+        nameEl.textContent = f.name + ' (' + sizeMB.toFixed(1) + ' MB)';
+        item.classList.add('filled');
+        status.hidden = false;
+      } else {
+        nameEl.textContent = '';
+        item.classList.remove('filled');
+        status.hidden = true;
+      }
+    });
+  });
+
+  // ---- Signature pad ----
+  const canvas = document.getElementById('sigPad');
+  const ctx = canvas.getContext('2d');
+  let drawing = false, hasDrawn = false;
+
+  function resizeCanvas(){
+    const ratio = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * ratio;
+    canvas.height = rect.height * ratio;
+    ctx.scale(ratio, ratio);
+    ctx.lineWidth = 2.2;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#0F1F52';
+  }
+  window.addEventListener('resize', ()=>{ const d = canvas.toDataURL(); resizeCanvas(); });
+  setTimeout(resizeCanvas, 50);
+
+  function pos(e){
+    const rect = canvas.getBoundingClientRect();
+    const t = e.touches ? e.touches[0] : e;
+    return {x: t.clientX - rect.left, y: t.clientY - rect.top};
+  }
+  function start(e){ drawing = true; hasDrawn = true; const p = pos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); e.preventDefault(); }
+  function move(e){ if(!drawing) return; const p = pos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); e.preventDefault(); }
+  function end(){ drawing = false; }
+
+  canvas.addEventListener('mousedown', start);
+  canvas.addEventListener('mousemove', move);
+  window.addEventListener('mouseup', end);
+  canvas.addEventListener('touchstart', start, {passive:false});
+  canvas.addEventListener('touchmove', move, {passive:false});
+  canvas.addEventListener('touchend', end);
+
+  document.getElementById('sigClear').addEventListener('click', ()=>{
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    hasDrawn = false;
+  });
+  function sigEmpty(){ return !hasDrawn; }
+
+  // ---- Summary ----
+  function buildSummary(){
+    const data = new FormData(form);
+    const rows = [
+      ['Nama Siswa', data.get('nama_lengkap')],
+      ['Jenis Kelamin', data.get('jenis_kelamin')],
+      ['Tanggal Lahir', data.get('tanggal_lahir')],
+      ['Kaki Dominan / Posisi', [data.get('kaki_dominan'), data.get('posisi_bermain')].filter(Boolean).join(' — ')],
+      ['Nama Wali', data.get('wali_nama_lengkap')],
+      ['HP Wali', data.get('wali_hp')],
+    ];
+    let html = '<h3>Ringkasan</h3>';
+    rows.forEach(r=>{
+      if(r[1]) html += '<div class="field"><label style="margin-bottom:2px;">'+r[0]+'</label><div style="font-size:14.5px;">'+r[1]+'</div></div>';
+    });
+    document.getElementById('summaryCard').innerHTML = html;
+  }
+
+  // ---- Submit ----
+  form.addEventListener('submit', async function(e){
+    e.preventDefault();
+    if(!validateStep(4)) { showStep(4); return; }
+
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Mengirim…';
+    document.getElementById('globalError').style.display = 'none';
+
+    try{
+      const fd = new FormData(form);
+      fd.append('tanda_tangan_dataurl', canvas.toDataURL('image/png'));
+
+      const res = await fetch('submit.php', { method:'POST', body: fd });
+      const json = await res.json();
+
+      if(json.ok){
+        document.querySelectorAll('main > *').forEach(el=>el.style.display='none');
+        document.getElementById('successScreen').style.display = 'block';
+        document.getElementById('kodeHasil').textContent = json.kode;
+      } else {
+        throw new Error(json.message || 'Terjadi kesalahan saat mengirim data.');
+      }
+    } catch(err){
+      const ge = document.getElementById('globalError');
+      ge.textContent = 'Gagal mengirim: ' + err.message + ' — coba lagi atau hubungi admin.';
+      ge.style.display = 'block';
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Kirim Pendaftaran';
+    }
+  });
+
+  renderProgress();
+})();
+</script>
+</body>
+</html>

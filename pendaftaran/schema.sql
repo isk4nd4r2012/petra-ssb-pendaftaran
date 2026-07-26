@@ -62,6 +62,10 @@ CREATE TABLE IF NOT EXISTS pendaftaran (
     status ENUM('Menunggu Kelengkapan','Baru','Diverifikasi','Diterima','Ditolak') NOT NULL DEFAULT 'Menunggu Kelengkapan',
     catatan_admin TEXT,
 
+    -- Pelacakan e-meterai utk dokumen Persetujuan Data Pribadi (dibeli &
+    -- ditempel manual oleh admin per pendaftar, di luar sistem ini)
+    materai_status ENUM('Belum','Sudah') NOT NULL DEFAULT 'Belum',
+
     ip_pendaftar VARCHAR(45)
 );
 
@@ -70,6 +74,7 @@ CREATE TABLE IF NOT EXISTS pendaftaran (
 -- Aman dijalankan berulang kali - tidak menghapus/mengubah data yang sudah ada.
 ALTER TABLE pendaftaran MODIFY COLUMN jenis_kelamin ENUM('Laki-laki','Perempuan') NULL;
 ALTER TABLE pendaftaran MODIFY COLUMN status ENUM('Menunggu Kelengkapan','Baru','Diverifikasi','Diterima','Ditolak') NOT NULL DEFAULT 'Menunggu Kelengkapan';
+ALTER TABLE pendaftaran ADD COLUMN IF NOT EXISTS materai_status ENUM('Belum','Sudah') NOT NULL DEFAULT 'Belum';
 
 -- Akun admin (multi-user) untuk login ke admin.php.
 -- ADMIN_USERNAME/ADMIN_PASSWORD di config.php tetap berfungsi sbg akun

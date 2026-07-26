@@ -116,6 +116,34 @@ if (!empty($_SESSION['petra_admin']) && isset($_POST['update_id'])) {
     }
 }
 
+// ---------- Toggle status materai (e-meterai sudah/belum ditempel) ----------
+if (!empty($_SESSION['petra_admin']) && isset($_POST['toggle_materai_id'])) {
+    try {
+        $pdo = get_db();
+        $targetId = (int) $_POST['toggle_materai_id'];
+        $statusBaru = ($_POST['materai_status_baru'] ?? 'Sudah') === 'Sudah' ? 'Sudah' : 'Belum';
+
+        $stmt = $pdo->prepare('UPDATE pendaftaran SET materai_status = :s WHERE id = :id');
+        $stmt->execute(['s' => $statusBaru, 'id' => $targetId]);
+
+        try {
+            $log = $pdo->prepare('INSERT INTO admin_aktivitas_log (username, aksi, pendaftaran_id) VALUES (:u, :a, :id)');
+            $log->execute([
+                'u' => $_SESSION['petra_admin_user'] ?? '?',
+                'a' => 'Tandai materai pendaftar #' . $targetId . ' -> ' . $statusBaru,
+                'id' => $targetId,
+            ]);
+        } catch (Exception $e) {
+            // tabel admin_aktivitas_log belum ada - abaikan
+        }
+
+        header('Location: admin.php?updated=1');
+        exit;
+    } catch (Exception $e) {
+        $dbError = 'Gagal menyimpan status materai. Kemungkinan kolom materai_status belum ada (lihat schema.sql) atau server database sedang sibuk.';
+    }
+}
+
 // ---------- Kelola admin: tambah akun ----------
 $adminMgmtError = null;
 if (!empty($_SESSION['petra_admin']) && isset($_POST['add_admin_username'])) {
@@ -226,11 +254,16 @@ if ($pdo && !$connError) {
   .card summary{cursor:pointer; font-weight:600; font-size:15px; list-style:none;}
   .card summary::-webkit-details-marker{display:none;}
   .meta{color:#4B5468; font-size:12.5px; margin-top:3px;}
-  .status-pill{display:inline-block; padding:3px 10px; border-radius:99px; font-size:11.5px; font-weight:600;}
+  .status-pill{display:inline-block; padding:3px 10px; border-radius:99px; font-size:11.5px; font-weight:600; margin-left:4px;}
+  .st-Menunggu-Kelengkapan{background:#EFEFEF; color:#6B7280;}
   .st-Baru{background:#FCE9D8; color:#D69A0C;}
   .st-Diverifikasi{background:#E4EEF9; color:#2A5C9A;}
   .st-Diterima{background:#E4F3E9; color:#2F6B4F;}
   .st-Ditolak{background:#FCEFEC; color:#D6242A;}
+  .mt-Belum{background:#FCEFEC; color:#D6242A;}
+  .mt-Sudah{background:#E4F3E9; color:#2F6B4F;}
+  form.materai-form{margin-top:10px; display:inline-block;}
+  form.materai-form button{padding:6px 12px; border-radius:7px; font-size:12.5px; font-weight:600; border:1.5px solid #DCE1F0; background:#fff; color:#0F1F52;}
   .detail-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; font-size:13.5px;}
   .detail-grid div b{display:block; font-size:11px; color:#4B5468; font-weight:600;}
   .files{margin-top:14px; display:flex; flex-wrap:wrap; gap:8px;}
@@ -330,7 +363,8 @@ if ($pdo && !$connError) {
     <summary>
       <input type="checkbox" class="pilih-cetak" value="<?= (int)$r['id'] ?>" onclick="event.stopPropagation()">
       <?= htmlspecialchars($r['nama_lengkap']) ?>
-      <span class="status-pill st-<?= htmlspecialchars($r['status']) ?>"><?= htmlspecialchars($r['status']) ?></span>
+      <span class="status-pill st-<?= htmlspecialchars(str_replace(' ', '-', $r['status'])) ?>"><?= htmlspecialchars($r['status']) ?></span>
+      <span class="status-pill mt-<?= ($r['materai_status'] ?? 'Belum') === 'Sudah' ? 'Sudah' : 'Belum' ?>">🖋 Materai: <?= ($r['materai_status'] ?? 'Belum') === 'Sudah' ? 'Sudah' : 'Belum' ?></span>
       <div class="meta"><?= htmlspecialchars($r['kode_pendaftaran']) ?> — <?= htmlspecialchars($r['tanggal_daftar']) ?></div>
     </summary>
 
@@ -377,6 +411,16 @@ if ($pdo && !$connError) {
       </select>
       <input type="text" name="catatan_admin" placeholder="Catatan admin" value="<?= htmlspecialchars($r['catatan_admin'] ?? '') ?>" style="flex:1; min-width:140px;">
       <button type="submit">Simpan</button>
+    </form>
+
+    <form class="materai-form" method="post">
+      <input type="hidden" name="toggle_materai_id" value="<?= (int)$r['id'] ?>">
+      <input type="hidden" name="materai_status_baru" value="<?= ($r['materai_status'] ?? 'Belum') === 'Sudah' ? 'Belum' : 'Sudah' ?>">
+      <?php if (($r['materai_status'] ?? 'Belum') === 'Sudah'): ?>
+        <button type="submit">↺ Tandai Materai Belum Ditempel</button>
+      <?php else: ?>
+        <button type="submit">🖋 Tandai Materai Sudah Ditempel</button>
+      <?php endif; ?>
     </form>
   </details>
 <?php endforeach; endif; ?>

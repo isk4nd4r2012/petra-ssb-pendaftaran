@@ -132,14 +132,26 @@ Orang tua isi index.html (5 langkah, di HP) - HANYA Nama Lengkap yang wajib
   (tidak ada perubahan PHP/database) — file akhir tetap dikirim lewat
   `submit.php` seperti biasa, jadi tidak ada langkah tambahan di server
   selain upload ulang `index.html`.
+- **Biaya materai (e-meterai)**: baris biaya "Materai Dokumen Resmi (Surat
+  Persetujuan Data Pribadi): Rp 15.000" ditambahkan terpisah dari biaya
+  pendaftaran Rp2.500.000 (total jadi Rp2.515.000) — tampil di form
+  (`index.html` langkah 5) dan di dokumen cetak Formulir Pendaftaran
+  (`inc-cetak-dokumen.php`). Angka Rp15.000 hardcode di 2 tempat itu — kalau
+  mau diubah, ubah di keduanya supaya konsisten.
+  ⚠️ Ini murni tampilan biaya; pembelian & penempelan e-meterai fisik ke
+  dokumen PDF final tetap proses **manual admin di luar sistem** (lewat
+  PosPay/portal e-meterai resmi) — sebelum jalan produksi, pastikan dulu ke
+  CS PosPay/PERURI apakah pola "beli & tempel utk banyak dokumen pihak lain
+  sbg bagian layanan berbayar" ini perlu status mitra/distributor resmi.
+- **Pelacakan status materai**: kolom baru `materai_status` (`Belum`/`Sudah`)
+  per pendaftar. Di `admin.php`, tiap kartu pendaftar sekarang ada pill
+  "🖋 Materai: Belum/Sudah" + tombol utk menandai kapan materainya sudah
+  dibeli & ditempel admin — berguna krn pendaftar masuk tidak menentu tiap
+  hari, jadi admin perlu cara gampang melacak siapa yg masih perlu diurus.
 
-### ⚠️ Wajib dilakukan di server setelah update ini
+### ⚠️ Wajib dilakukan di server setelah update materai ini
 
-1. **Import ulang `schema.sql` lewat phpMyAdmin** (tab Import) — ada
-   penyesuaian kolom `status` (tambah nilai `Menunggu Kelengkapan`) dan
-   `jenis_kelamin` (kini boleh kosong), plus 3 tabel admin dari update
-   sebelumnya. Aman, tidak menghapus data pendaftar yang sudah ada.
-2. Upload semua file PHP yang berubah, termasuk **2 file baru**:
-   `ambil-data.php`, `inc-cetak-dokumen.php`, `cetak-publik.php` — pastikan
-   ikut diupload ke folder `pendaftaran/` di server (bukan cuma file yg sudah
-   ada sebelumnya).
+1. **Import ulang `schema.sql` lewat phpMyAdmin** (tab Import) — nambah
+   kolom `materai_status`. Aman, tidak menghapus data pendaftar yang sudah ada.
+2. Upload ulang `admin.php`, `inc-cetak-dokumen.php`, dan `index.html`
+   (ketiganya berubah).

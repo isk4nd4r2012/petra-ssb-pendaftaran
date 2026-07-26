@@ -103,7 +103,9 @@ function render_docs($r, $jenis) {
       <li>Registrasi Database Online</li>
       <li>Seragam Latihan 2 pasang</li>
       <li>Kurikulum Sepakbola (Praktek dan Teori) menurut kelompok usia</li>
+      <li>Materai Dokumen Resmi (Surat Persetujuan Data Pribadi): Rp 15.000,-</li>
     </ul>
+    <p style="margin-top:8px;"><b>Total Bayar: Rp 2.515.000,-</b></p>
   </div>
 </div>
 <?php endif; ?>

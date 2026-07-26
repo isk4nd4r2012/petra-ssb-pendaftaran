@@ -199,6 +199,19 @@
   .field.invalid input,.field.invalid select,.field.invalid textarea{border-color:var(--danger); background:#FCF3F1;}
   .field.invalid .error-msg{display:block;}
 
+  .paket-list{display:flex; flex-direction:column; gap:10px;}
+  .paket-card{
+    display:block; border:1.5px solid var(--line-200); border-radius:12px; padding:14px;
+    cursor:pointer; background:var(--paper-0); position:relative;
+  }
+  .paket-card.selected{border-color:var(--pitch-700); background:#EEF2FB;}
+  .paket-card input[type=radio]{position:absolute; top:14px; right:14px; width:20px; height:20px; accent-color:var(--pitch-700);}
+  .paket-card-title{font-weight:700; font-size:14.5px; color:var(--pitch-900); margin:0 0 6px; padding-right:30px;}
+  .paket-card ul{margin:6px 0 0; padding-left:18px; font-size:12.5px; color:var(--ink-600);}
+  .paket-card ul li{margin-bottom:3px;}
+  .paket-card input[type=number]{margin-top:4px; width:100%; padding:10px; font-size:14px; border:1.5px solid var(--line-200); border-radius:9px; background:#fff;}
+  .paket-card input[type=number]:disabled{background:var(--paper-0); color:var(--ink-600);}
+
   .biaya-box{
     background:var(--pitch-900); color:#fff; border-radius:var(--radius); padding:16px;
     margin-bottom:16px;
@@ -585,21 +598,50 @@
     <div class="step-eyebrow"><span class="step-num">5</span><h2>Periksa &amp; Kirim</h2></div>
     <p class="step-desc">Pastikan data sudah benar sebelum dikirim.</p>
 
+    <div class="card">
+      <h3>Pilih Paket Pendaftaran</h3>
+      <div class="paket-list">
+        <label class="paket-card">
+          <input type="radio" name="paket_pendaftaran" value="Lunas" checked>
+          <div class="paket-card-title">💳 Paket Lunas — Rp 2.500.000</div>
+          <ul>
+            <li>Registrasi database online</li>
+            <li>2 pasang seragam latihan</li>
+            <li>1 bola latihan</li>
+            <li>Kurikulum sepakbola (praktek &amp; teori) sesuai kelompok usia</li>
+          </ul>
+        </label>
+
+        <label class="paket-card">
+          <input type="radio" name="paket_pendaftaran" value="Binaan">
+          <div class="paket-card-title">🌱 Paket Binaan — Rp 500.000</div>
+          <ul>
+            <li>Terdaftar sebagai Siswa Petra FC</li>
+            <li>1 pasang seragam latihan</li>
+            <li>Kurikulum sepakbola (praktek &amp; teori) sesuai kelompok usia</li>
+            <li>Tanpa bola latihan &amp; seragam ke-2 (bisa dibeli terpisah)</li>
+          </ul>
+        </label>
+
+        <label class="paket-card">
+          <input type="radio" name="paket_pendaftaran" value="Kondisi Ekonomi">
+          <div class="paket-card-title">🤝 Sesuai Kondisi Ekonomi</div>
+          <p style="font-size:12.5px; color:var(--ink-600); margin:6px 0 8px;">Tuliskan nominal yang Anda sanggupi.</p>
+          <input type="number" name="nominal_kondisi_ekonomi" id="nominalKondisiEkonomi" placeholder="Contoh: 250000" inputmode="numeric" min="0" disabled>
+        </label>
+      </div>
+    </div>
+
     <div class="biaya-box">
-      <div style="font-size:12.5px; color:#CFE0D5;">Biaya Pendaftaran</div>
-      <div class="amt">Rp 2.500.000</div>
-      <ul>
-        <li>Registrasi database online</li>
-        <li>Seragam latihan 2 pasang</li>
-        <li>Kurikulum sepakbola (praktek &amp; teori) sesuai kelompok usia</li>
-      </ul>
+      <div style="font-size:12.5px; color:#CFE0D5;" id="biayaLabel">Biaya Pendaftaran (Paket Lunas)</div>
+      <div class="amt" id="biayaPokok">Rp 2.500.000</div>
       <div style="margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,.15); display:flex; justify-content:space-between; align-items:center; gap:10px;">
-        <span style="font-size:12.5px; color:#D9E5DD;">Materai Dokumen Resmi (Surat Persetujuan Data Pribadi)</span>
+        <span style="font-size:12.5px; color:#D9E5DD;">Materai Dokumen Resmi (Surat Persetujuan Data Pribadi) — wajib</span>
         <span style="font-family:'Oswald',sans-serif; font-weight:700; color:#F6D9A0; font-size:15px; white-space:nowrap;">Rp 15.000</span>
       </div>
       <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
         <span style="font-size:13px; font-weight:600;">Total Bayar</span>
-        <span style="font-family:'Oswald',sans-serif; font-weight:700; color:var(--cone-500); font-size:19px;">Rp 2.515.000</span>
+        <span id="totalBayar" style="font-family:'Oswald',sans-serif; font-weight:700; color:var(--cone-500); font-size:19px;">Rp 2.515.000</span>
       </div>
     </div>
 
@@ -714,7 +756,7 @@
     current = n;
     renderProgress();
     window.scrollTo({top:0, behavior:'smooth'});
-    if(n === 5) buildSummary();
+    if(n === 5){ buildSummary(); updateBiayaBox(); }
   }
 
   // Hanya "Nama Lengkap" (siswa) yang benar-benar wajib supaya bisa lanjut.
@@ -1145,6 +1187,36 @@
     return sigEmpty() ? null : canvas.toDataURL('image/png');
   }
 
+  // ---- Paket pendaftaran & biaya dinamis ----
+  const PAKET_HARGA = { 'Lunas': 2500000, 'Binaan': 500000 };
+  const MATERAI_FEE = 15000;
+  const PAKET_LABEL = { 'Lunas': 'Paket Lunas', 'Binaan': 'Paket Binaan', 'Kondisi Ekonomi': 'Sesuai Kondisi Ekonomi' };
+
+  function formatRupiah(n){
+    n = Math.max(0, Math.round(Number(n) || 0));
+    return 'Rp ' + n.toLocaleString('id-ID');
+  }
+
+  function updateBiayaBox(){
+    const checked = form.querySelector('input[name="paket_pendaftaran"]:checked');
+    const paket = checked ? checked.value : 'Lunas';
+    const nominalInput = document.getElementById('nominalKondisiEkonomi');
+    nominalInput.disabled = (paket !== 'Kondisi Ekonomi');
+
+    const pokok = (paket === 'Kondisi Ekonomi') ? (Number(nominalInput.value) || 0) : (PAKET_HARGA[paket] || 0);
+    document.getElementById('biayaLabel').textContent = 'Biaya Pendaftaran (' + (PAKET_LABEL[paket] || paket) + ')';
+    document.getElementById('biayaPokok').textContent = formatRupiah(pokok);
+    document.getElementById('totalBayar').textContent = formatRupiah(pokok + MATERAI_FEE);
+
+    document.querySelectorAll('.paket-card').forEach(function(card){
+      const r = card.querySelector('input[type=radio]');
+      card.classList.toggle('selected', r.checked);
+    });
+  }
+  form.querySelectorAll('input[name="paket_pendaftaran"]').forEach(function(r){ r.addEventListener('change', updateBiayaBox); });
+  document.getElementById('nominalKondisiEkonomi').addEventListener('input', updateBiayaBox);
+  updateBiayaBox();
+
   // ---- Summary ----
   function buildSummary(){
     const data = new FormData(form);
@@ -1262,6 +1334,8 @@
       banner.style.display = 'block';
       banner.innerHTML = '<b>📋 Catatan dari admin:</b> ' + data.catatan_admin.replace(/</g,'&lt;');
     }
+
+    updateBiayaBox();
   }
 
   (function initLanjut(){

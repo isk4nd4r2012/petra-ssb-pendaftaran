@@ -67,7 +67,12 @@ $data = [
     'setuju_data_pribadi'      => !empty($_POST['setuju_data_pribadi']) ? 1 : 0,
     'setuju_pernyataan_pemain' => !empty($_POST['setuju_pernyataan_pemain']) ? 1 : 0,
     'setuju_perjanjian_amatir' => !empty($_POST['setuju_perjanjian_amatir']) ? 1 : 0,
+
+    'paket_pendaftaran'         => in_array(s('paket_pendaftaran'), ['Lunas', 'Binaan', 'Kondisi Ekonomi'], true) ? s('paket_pendaftaran') : 'Lunas',
 ];
+$data['nominal_kondisi_ekonomi'] = ($data['paket_pendaftaran'] === 'Kondisi Ekonomi' && is_numeric($_POST['nominal_kondisi_ekonomi'] ?? null))
+    ? (int) $_POST['nominal_kondisi_ekonomi']
+    : null;
 
 // ---------- Satu-satunya field yang benar-benar wajib ----------
 if (empty($data['nama_lengkap'])) {

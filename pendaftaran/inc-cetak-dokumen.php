@@ -23,6 +23,54 @@ function ttl($tempat, $tgl) {
     $s = trim($tempat . ($tempat && $tgl ? ', ' : '') . $tgl);
     return $s !== '' ? htmlspecialchars($s) : '...........................................';
 }
+// ---- kotak biaya, sesuai paket pendaftaran yang benar-benar dipilih ----
+function render_biaya_box($r) {
+    $materai = 15000;
+    $paket = $r['paket_pendaftaran'] ?? 'Lunas';
+
+    if ($paket === 'Binaan') {
+        $pokok = 500000;
+        $judul = 'Biaya Pendaftaran (Paket Binaan)';
+        $items = [
+            'Terdaftar sebagai Siswa Petra FC',
+            '1 pasang Seragam Latihan',
+            'Kurikulum Sepakbola (Praktek dan Teori) menurut kelompok usia',
+        ];
+        $catatan = 'Tanpa bola latihan & seragam ke-2 (dapat dibeli terpisah).';
+    } elseif ($paket === 'Kondisi Ekonomi') {
+        $pokok = (int) ($r['nominal_kondisi_ekonomi'] ?? 0);
+        $judul = 'Biaya Pendaftaran (Sesuai Kondisi Ekonomi)';
+        $items = [
+            'Registrasi Database Online',
+            'Kurikulum Sepakbola (Praktek dan Teori) menurut kelompok usia',
+        ];
+        $catatan = null;
+    } else {
+        $pokok = 2500000;
+        $judul = 'Biaya Pendaftaran (Paket Lunas)';
+        $items = [
+            'Registrasi Database Online',
+            '2 pasang Seragam Latihan',
+            '1 Bola Latihan',
+            'Kurikulum Sepakbola (Praktek dan Teori) menurut kelompok usia',
+        ];
+        $catatan = null;
+    }
+    $total = $pokok + $materai;
+
+    ob_start(); ?>
+    <div class="biaya-box">
+      <b><?= htmlspecialchars($judul) ?>: Rp <?= number_format($pokok, 0, ',', '.') ?>,-</b>
+      <ul>
+        <?php foreach ($items as $it): ?><li><?= htmlspecialchars($it) ?></li><?php endforeach; ?>
+        <li>Materai Dokumen Resmi (Surat Persetujuan Data Pribadi): Rp 15.000,-</li>
+      </ul>
+      <?php if ($catatan): ?><p style="margin:6px 0 0; font-style:italic; font-size:11pt;"><?= htmlspecialchars($catatan) ?></p><?php endif; ?>
+      <p style="margin-top:8px;"><b>Total Bayar: Rp <?= number_format($total, 0, ',', '.') ?>,-</b></p>
+    </div>
+    <?php return ob_get_clean();
+}
+
 // ---- reusable table for the 3 legal documents (wali + pemain data) ----
 function info_table($r, $alamatSiswa) {
     ob_start(); ?>
@@ -97,16 +145,7 @@ function render_docs($r, $jenis) {
     <div class="sig-line"><?= v($r['wali_nama_lengkap'],'') ?></div>
   </div>
 
-  <div class="biaya-box">
-    <b>Biaya Pendaftaran: Rp 2.500.000,-</b>
-    <ul>
-      <li>Registrasi Database Online</li>
-      <li>Seragam Latihan 2 pasang</li>
-      <li>Kurikulum Sepakbola (Praktek dan Teori) menurut kelompok usia</li>
-      <li>Materai Dokumen Resmi (Surat Persetujuan Data Pribadi): Rp 15.000,-</li>
-    </ul>
-    <p style="margin-top:8px;"><b>Total Bayar: Rp 2.515.000,-</b></p>
-  </div>
+  <?= render_biaya_box($r) ?>
 </div>
 <?php endif; ?>
 

@@ -66,6 +66,10 @@ CREATE TABLE IF NOT EXISTS pendaftaran (
     -- ditempel manual oleh admin per pendaftar, di luar sistem ini)
     materai_status ENUM('Belum','Sudah') NOT NULL DEFAULT 'Belum',
 
+    -- Paket pendaftaran yang dipilih di form
+    paket_pendaftaran ENUM('Lunas','Binaan','Kondisi Ekonomi') NOT NULL DEFAULT 'Lunas',
+    nominal_kondisi_ekonomi DECIMAL(12,0) NULL,
+
     ip_pendaftar VARCHAR(45)
 );
 
@@ -75,6 +79,8 @@ CREATE TABLE IF NOT EXISTS pendaftaran (
 ALTER TABLE pendaftaran MODIFY COLUMN jenis_kelamin ENUM('Laki-laki','Perempuan') NULL;
 ALTER TABLE pendaftaran MODIFY COLUMN status ENUM('Menunggu Kelengkapan','Baru','Diverifikasi','Diterima','Ditolak') NOT NULL DEFAULT 'Menunggu Kelengkapan';
 ALTER TABLE pendaftaran ADD COLUMN IF NOT EXISTS materai_status ENUM('Belum','Sudah') NOT NULL DEFAULT 'Belum';
+ALTER TABLE pendaftaran ADD COLUMN IF NOT EXISTS paket_pendaftaran ENUM('Lunas','Binaan','Kondisi Ekonomi') NOT NULL DEFAULT 'Lunas';
+ALTER TABLE pendaftaran ADD COLUMN IF NOT EXISTS nominal_kondisi_ekonomi DECIMAL(12,0) NULL;
 
 -- Akun admin (multi-user) untuk login ke admin.php.
 -- ADMIN_USERNAME/ADMIN_PASSWORD di config.php tetap berfungsi sbg akun

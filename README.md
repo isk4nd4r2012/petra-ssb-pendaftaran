@@ -164,10 +164,24 @@ Orang tua isi index.html (5 langkah, di HP) - HANYA Nama Lengkap yang wajib
   luruskan sudut). Hasil akhir tetap dikirim lewat field
   `tanda_tangan_dataurl` yang sama seperti sebelumnya, jadi `submit.php`
   tidak perlu diubah.
+- **3 paket pendaftaran**: di langkah 5, orang tua sekarang memilih salah satu:
+  - **Lunas** — Rp 2.500.000 (2 pasang seragam + 1 bola latihan + kurikulum)
+  - **Binaan** — Rp 500.000 (terdaftar sbg Siswa Petra FC + 1 pasang seragam,
+    tanpa bola/seragam ke-2 — bisa dibeli terpisah)
+  - **Sesuai Kondisi Ekonomi** — orang tua tulis sendiri nominal yang sanggup
+    dibayar
 
-### ⚠️ Wajib dilakukan di server setelah update materai ini
+  Materai Rp15.000 tetap wajib & ditambahkan ke total di ketiga paket. Kolom
+  baru `paket_pendaftaran` dan `nominal_kondisi_ekonomi` (khusus paket ke-3)
+  disimpan per pendaftar, ditampilkan di `admin.php`, dan dipakai
+  `inc-cetak-dokumen.php` utk menampilkan rincian biaya yang sesuai paket yang
+  benar-benar dipilih di dokumen Formulir Pendaftaran cetak (bukan lagi
+  angka statis Rp2.500.000 utk semua orang).
+
+### ⚠️ Wajib dilakukan di server setelah update ini
 
 1. **Import ulang `schema.sql` lewat phpMyAdmin** (tab Import) — nambah
-   kolom `materai_status`. Aman, tidak menghapus data pendaftar yang sudah ada.
-2. Upload ulang `admin.php`, `inc-cetak-dokumen.php`, dan `index.html`
-   (ketiganya berubah).
+   kolom `materai_status`, `paket_pendaftaran`, `nominal_kondisi_ekonomi`.
+   Aman, tidak menghapus data pendaftar yang sudah ada.
+2. Upload ulang `admin.php`, `inc-cetak-dokumen.php`, `index.html`, dan
+   `submit.php` (keempatnya berubah).

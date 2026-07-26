@@ -377,6 +377,17 @@ if ($pdo && !$connError) {
       <div><b>HP Wali</b><?= htmlspecialchars($r['wali_hp'] ?? '-') ?></div>
       <div><b>Nama Ayah</b><?= htmlspecialchars($r['nama_ayah'] ?? '-') ?></div>
       <div><b>Nama Ibu</b><?= htmlspecialchars($r['nama_ibu'] ?? '-') ?></div>
+      <div>
+        <b>Paket Pendaftaran</b>
+        <?php
+        $paket = $r['paket_pendaftaran'] ?? 'Lunas';
+        $labelPaket = ['Lunas' => 'Lunas (Rp 2.500.000)', 'Binaan' => 'Binaan (Rp 500.000)', 'Kondisi Ekonomi' => 'Sesuai Kondisi Ekonomi'];
+        echo htmlspecialchars($labelPaket[$paket] ?? $paket);
+        if ($paket === 'Kondisi Ekonomi') {
+            echo ' — Rp ' . number_format((int)($r['nominal_kondisi_ekonomi'] ?? 0), 0, ',', '.');
+        }
+        ?>
+      </div>
     </div>
 
     <div class="files">

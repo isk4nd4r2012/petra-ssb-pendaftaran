@@ -41,6 +41,15 @@ function format_hp_62($nomor) {
     return $nomor;
 }
 
+// Paksa Excel/Google Sheets membaca angka panjang (NIK, No HP) sbg TEKS,
+// bukan angka - kalau tidak, otomatis dibulatkan & ditampilkan notasi
+// ilmiah (mis. 9.10302E+13) krn melebihi presisi angka standar.
+function csv_teks_paksa($val) {
+    $val = (string) $val;
+    if ($val === '') return '';
+    return '="' . str_replace('"', '""', $val) . '"';
+}
+
 $filename = 'siap-pssi-referensi-' . date('Y-m-d') . '.csv';
 header('Content-Type: text/csv; charset=utf-8');
 header('Content-Disposition: attachment; filename="' . $filename . '"');
@@ -98,7 +107,7 @@ foreach ($rows as $r) {
         $r['nama_lengkap'] ?? '',
         $r['nama_panggilan'] ?? '',
         $r['tanggal_lahir'] ?? '',
-        $r['nik_siswa'] ?? '',
+        csv_teks_paksa($r['nik_siswa'] ?? ''),
         'NIK',
         $r['jenis_kelamin'] ?? '',
         'Indonesia',
@@ -110,7 +119,7 @@ foreach ($rows as $r) {
         $alamatSiswa ?? '',
         '', // Provinsi - tidak dikumpulkan form kita, isi manual
         '', // Kota - tidak dikumpulkan form kita, isi manual
-        format_hp_62($noHp),
+        csv_teks_paksa(format_hp_62($noHp)),
         '', // Email - tidak dikumpulkan form kita
         // Klub Sebelumnya
         'Indonesia',
@@ -128,7 +137,7 @@ foreach ($rows as $r) {
         $r['status'] ?? '',
         $r['status_pembayaran'] ?? '',
         $r['wali_nama_lengkap'] ?? '',
-        $r['wali_hp'] ?? '',
+        csv_teks_paksa($r['wali_hp'] ?? ''),
         $r['catatan_admin'] ?? '',
     ];
     fputcsv($out, $baris);

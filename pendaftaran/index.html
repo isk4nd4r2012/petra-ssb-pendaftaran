@@ -635,31 +635,34 @@
       <div class="paket-list">
         <label class="paket-card">
           <input type="radio" name="paket_pendaftaran" value="Lunas" checked>
-          <div class="paket-card-title">💳 Paket Lunas — Rp 2.500.000</div>
+          <div class="paket-card-title">💳 Lunas — Rp 2.500.000</div>
           <ul>
-            <li>Registrasi database online</li>
-            <li>2 pasang seragam latihan</li>
-            <li>1 bola latihan</li>
+            <li>Biaya pendaftaran untuk dibina sebagai pemain Petra FC</li>
+            <li>2 pasang seragam latihan GRATIS</li>
+            <li>1 bola latihan GRATIS</li>
             <li>Kurikulum sepakbola (praktek &amp; teori) sesuai kelompok usia</li>
           </ul>
+          <p class="hint">Bonus 2 seragam &amp; 1 bola hanya berlaku bila dibayar lunas sekaligus. Setiap tahun berikutnya akan ada biaya pendaftaran ulang terpisah, untuk administrasi &amp; kebutuhan di tahun berjalan.</p>
         </label>
 
         <label class="paket-card">
-          <input type="radio" name="paket_pendaftaran" value="Binaan">
-          <div class="paket-card-title">🌱 Paket Binaan — Rp 500.000</div>
+          <input type="radio" name="paket_pendaftaran" value="Cicilan">
+          <div class="paket-card-title">📆 Cicilan — mulai Rp 500.000</div>
           <ul>
-            <li>Terdaftar sebagai Siswa Petra FC</li>
-            <li>1 pasang seragam latihan</li>
+            <li>Ini cicilan pertama menuju total Rp 2.500.000 (bukan paket terpisah)</li>
+            <li>Langsung dapat 1 pasang seragam latihan</li>
+            <li>Langsung berhak mengikuti latihan</li>
             <li>Kurikulum sepakbola (praktek &amp; teori) sesuai kelompok usia</li>
-            <li>Tanpa bola latihan &amp; seragam ke-2 (bisa dibeli terpisah)</li>
           </ul>
+          <p class="hint">Karena belum lunas sekaligus, pemain <b>tidak</b> mendapat bonus seragam ke-2 &amp; bola latihan gratis. Sisa cicilan akan ditagih bertahap oleh admin.</p>
         </label>
 
         <label class="paket-card">
           <input type="radio" name="paket_pendaftaran" value="Kondisi Ekonomi">
           <div class="paket-card-title">🤝 Sesuai Kondisi Ekonomi</div>
-          <p style="font-size:12.5px; color:var(--ink-600); margin:6px 0 8px;">Tuliskan nominal yang Anda sanggupi.</p>
+          <p style="font-size:12.5px; color:var(--ink-600); margin:6px 0 8px;">Tuliskan nominal yang Anda sanggupi sekarang.</p>
           <input type="number" name="nominal_kondisi_ekonomi" id="nominalKondisiEkonomi" placeholder="Contoh: 250000" inputmode="numeric" min="0" disabled>
+          <p class="hint">Jika total pembayaran masih di bawah Rp 500.000, pemain belum menerima seragam. Begitu total mencapai Rp 500.000, pemain menerima 1 pasang seragam latihan (sama seperti cicilan pertama). Bonus seragam ke-2 &amp; bola gratis tetap hanya berlaku untuk pembayaran lunas sekaligus.</p>
         </label>
       </div>
     </div>
@@ -1280,9 +1283,9 @@
   }
 
   // ---- Paket pendaftaran & biaya dinamis ----
-  const PAKET_HARGA = { 'Lunas': 2500000, 'Binaan': 500000 };
+  const PAKET_HARGA = { 'Lunas': 2500000, 'Cicilan': 500000 };
   const MATERAI_FEE = 15000;
-  const PAKET_LABEL = { 'Lunas': 'Paket Lunas', 'Binaan': 'Paket Binaan', 'Kondisi Ekonomi': 'Sesuai Kondisi Ekonomi' };
+  const PAKET_LABEL = { 'Lunas': 'Lunas', 'Cicilan': 'Cicilan Pertama', 'Kondisi Ekonomi': 'Sesuai Kondisi Ekonomi' };
 
   function formatRupiah(n){
     n = Math.max(0, Math.round(Number(n) || 0));

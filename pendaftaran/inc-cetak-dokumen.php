@@ -44,15 +44,16 @@ function render_biaya_box($r) {
 
     $paket = $r['paket_pendaftaran'] ?? 'Lunas';
 
-    if ($paket === 'Binaan') {
+    if ($paket === 'Cicilan') {
         $pokok = 500000;
-        $judul = 'Biaya Pendaftaran (Paket Binaan)';
+        $judul = 'Biaya Pendaftaran (Cicilan Pertama)';
         $items = [
-            'Terdaftar sebagai Siswa Petra FC',
+            'Cicilan pertama menuju total biaya pendaftaran Rp 2.500.000',
             '1 pasang Seragam Latihan',
+            'Berhak mengikuti latihan',
             'Kurikulum Sepakbola (Praktek dan Teori) menurut kelompok usia',
         ];
-        $catatan = 'Tanpa bola latihan & seragam ke-2 (dapat dibeli terpisah).';
+        $catatan = 'Bukan paket terpisah — ini cicilan pertama dari total Rp 2.500.000. Karena belum lunas sekaligus, pemain TIDAK mendapat bonus 2 pasang seragam & 1 bola latihan gratis. Sisa cicilan akan ditagih bertahap oleh admin.';
     } elseif ($paket === 'Kondisi Ekonomi') {
         $pokok = (int) ($r['nominal_kondisi_ekonomi'] ?? 0);
         $judul = 'Biaya Pendaftaran (Sesuai Kondisi Ekonomi)';
@@ -60,17 +61,17 @@ function render_biaya_box($r) {
             'Registrasi Database Online',
             'Kurikulum Sepakbola (Praktek dan Teori) menurut kelompok usia',
         ];
-        $catatan = null;
+        $catatan = 'Bila total pembayaran masih di bawah Rp 500.000, pemain belum menerima seragam. Begitu total mencapai Rp 500.000, pemain menerima 1 pasang Seragam Latihan (sama seperti cicilan pertama). Bonus 2 pasang seragam & 1 bola gratis tetap hanya berlaku untuk pembayaran lunas sekaligus.';
     } else {
         $pokok = 2500000;
-        $judul = 'Biaya Pendaftaran (Paket Lunas)';
+        $judul = 'Biaya Pendaftaran (Lunas)';
         $items = [
             'Registrasi Database Online',
             '2 pasang Seragam Latihan',
             '1 Bola Latihan',
             'Kurikulum Sepakbola (Praktek dan Teori) menurut kelompok usia',
         ];
-        $catatan = null;
+        $catatan = 'Biaya ini untuk dibina sebagai pemain Petra FC di tahun berjalan. Setiap tahun berikutnya akan ada biaya pendaftaran ulang terpisah, untuk administrasi & kebutuhan tahun berjalan.';
     }
     $total = $pokok + $materai;
 

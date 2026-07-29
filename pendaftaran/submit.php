@@ -68,7 +68,7 @@ $data = [
     'setuju_pernyataan_pemain' => !empty($_POST['setuju_pernyataan_pemain']) ? 1 : 0,
     'setuju_perjanjian_amatir' => !empty($_POST['setuju_perjanjian_amatir']) ? 1 : 0,
 
-    'paket_pendaftaran'         => in_array(s('paket_pendaftaran'), ['Lunas', 'Binaan', 'Kondisi Ekonomi'], true) ? s('paket_pendaftaran') : 'Lunas',
+    'paket_pendaftaran'         => in_array(s('paket_pendaftaran'), ['Lunas', 'Cicilan', 'Kondisi Ekonomi'], true) ? s('paket_pendaftaran') : 'Lunas',
 
     'jenis_pendaftar'           => (s('jenis_pendaftar') === 'Pemain Lama') ? 'Pemain Lama' : 'Baru',
 ];

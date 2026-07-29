@@ -173,7 +173,7 @@ if (!empty($_SESSION['petra_admin']) && isset($_POST['update_bayar_id'])) {
     try {
         $pdo = get_db();
         $targetId = (int) $_POST['update_bayar_id'];
-        $statusBayar = in_array($_POST['status_pembayaran'] ?? '', ['Belum Bayar', 'Menunggu Konfirmasi', 'Lunas'], true)
+        $statusBayar = in_array($_POST['status_pembayaran'] ?? '', ['Belum Bayar', 'Cicilan 1', 'Cicilan 2', 'Cicilan 3', 'Menunggu Konfirmasi', 'Lunas'], true)
             ? $_POST['status_pembayaran'] : 'Belum Bayar';
 
         $stmt = $pdo->prepare('UPDATE pendaftaran SET status_pembayaran = :s WHERE id = :id');
@@ -361,6 +361,9 @@ if ($pdo && !$connError) {
   .mt-Belum{background:#FCEFEC; color:#D6242A;}
   .mt-Sudah{background:#E4F3E9; color:#2F6B4F;}
   .by-Belum-Bayar{background:#FCEFEC; color:#D6242A;}
+  .by-Cicilan-1{background:#E4EEF9; color:#2A5C9A;}
+  .by-Cicilan-2{background:#DCE8F5; color:#1F4A80;}
+  .by-Cicilan-3{background:#D3E3F5; color:#163A66;}
   .by-Menunggu-Konfirmasi{background:#FCE9D8; color:#D69A0C;}
   .by-Lunas{background:#E4F3E9; color:#2F6B4F;}
   .jp-lama{background:#F3E8D8; color:#8B5A1F;}
@@ -508,7 +511,7 @@ if ($pdo && !$connError) {
           <b>Paket Pendaftaran</b>
           <?php
           $paket = $r['paket_pendaftaran'] ?? 'Lunas';
-          $labelPaket = ['Lunas' => 'Lunas (Rp 2.500.000)', 'Binaan' => 'Binaan (Rp 500.000)', 'Kondisi Ekonomi' => 'Sesuai Kondisi Ekonomi'];
+          $labelPaket = ['Lunas' => 'Lunas (Rp 2.500.000)', 'Cicilan' => 'Cicilan (mulai Rp 500.000)', 'Kondisi Ekonomi' => 'Sesuai Kondisi Ekonomi'];
           echo htmlspecialchars($labelPaket[$paket] ?? $paket);
           if ($paket === 'Kondisi Ekonomi') {
               echo ' — Rp ' . number_format((int)($r['nominal_kondisi_ekonomi'] ?? 0), 0, ',', '.');
@@ -565,7 +568,7 @@ if ($pdo && !$connError) {
     <form class="status-form" method="post" style="margin-top:8px;">
       <input type="hidden" name="update_bayar_id" value="<?= (int)$r['id'] ?>">
       <select name="status_pembayaran">
-        <?php foreach (['Belum Bayar','Menunggu Konfirmasi','Lunas'] as $sb): ?>
+        <?php foreach (['Belum Bayar','Cicilan 1','Cicilan 2','Cicilan 3','Menunggu Konfirmasi','Lunas'] as $sb): ?>
           <option value="<?= $sb ?>" <?= ($r['status_pembayaran'] ?? 'Belum Bayar') === $sb ? 'selected' : '' ?>>💰 <?= $sb ?></option>
         <?php endforeach; ?>
       </select>

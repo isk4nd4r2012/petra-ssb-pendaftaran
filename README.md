@@ -239,8 +239,40 @@ Orang tua isi index.html (5 langkah, di HP) - HANYA Nama Lengkap yang wajib
   & jumlah file tiap kali halaman admin dibuka — supaya admin bisa pantau
   pertumbuhan penyimpanan dari waktu ke waktu tanpa perlu buka File Manager
   Hostinger.
+- **Paket "Binaan" diganti jadi "Cicilan" — logika biaya diperjelas**: Rp
+  500.000 bukan lagi paket terpisah "cukup daftar Rp500rb", melainkan
+  **cicilan pertama** menuju total biaya pendaftaran Rp 2.500.000 (biar
+  jelas ini "dibina di Petra FC dengan cara mencicil", bukan jalur pendaftaran
+  yang lebih murah). Konsekuensinya dijelaskan langsung di form:
+  - **Lunas** (Rp 2.500.000 sekaligus) → tetap dapat bonus 2 pasang seragam +
+    1 bola latihan gratis. Ditambahkan juga catatan bahwa setiap tahun
+    berikutnya ada biaya pendaftaran ulang terpisah (administrasi & kebutuhan
+    tahun berjalan).
+  - **Cicilan** (mulai Rp 500.000) → langsung dapat 1 pasang seragam latihan +
+    berhak latihan, tapi **tidak** dapat bonus seragam ke-2 & bola gratis
+    karena tidak lunas sekaligus. Sisa cicilan ditagih bertahap oleh admin.
+  - **Sesuai Kondisi Ekonomi** → sama seperti Cicilan: kalau total bayar masih
+    di bawah Rp500.000 belum dapat seragam sama sekali; begitu kumulatif
+    mencapai Rp500.000 baru dapat 1 pasang seragam (milestone yang sama
+    dengan cicilan pertama); tetap tidak dapat bonus 2 seragam + bola.
+
+  Kolom `paket_pendaftaran` di database berubah nilai dari `'Binaan'` menjadi
+  `'Cicilan'` (nilai lama `'Binaan'` dipertahankan di enum utk kompatibilitas,
+  tapi tidak lagi ditulis sistem — `schema.sql` sudah memuat migrasi
+  `UPDATE ... SET paket_pendaftaran='Cicilan' WHERE paket_pendaftaran='Binaan'`
+  yang otomatis memindahkan data lama).
+- **Status pembayaran (`status_pembayaran`) bertambah 3 tahap cicilan**:
+  sekarang pilihannya Belum Bayar → **Cicilan 1 → Cicilan 2 → Cicilan 3** →
+  Menunggu Konfirmasi → Lunas. Admin pilih manual di dropdown `admin.php`
+  sesuai progres cicilan yang sudah masuk (sama seperti pola status
+  pembayaran & materai sebelumnya — bukan penghitungan otomatis, tetap
+  verifikasi manual oleh admin berdasarkan bukti transfer/WhatsApp).
 
 ### ⚠️ Wajib dilakukan di server setelah update ini
 
-Tidak ada perubahan skema database di update ini (tidak perlu import ulang
-`schema.sql`). Cukup upload ulang **1 file**: `admin.php`.
+1. **Import ulang `schema.sql` lewat phpMyAdmin** (tab Import) — mengubah
+   enum `paket_pendaftaran` (tambah `'Cicilan'`, migrasi data lama dari
+   `'Binaan'`) dan `status_pembayaran` (tambah `'Cicilan 1'`, `'Cicilan 2'`,
+   `'Cicilan 3'`). Aman, tidak menghapus data pendaftar yang sudah ada.
+2. Upload ulang **4 file**: `index.html`, `submit.php`,
+   `inc-cetak-dokumen.php`, `admin.php`.

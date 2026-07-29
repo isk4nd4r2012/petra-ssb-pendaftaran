@@ -67,8 +67,10 @@ CREATE TABLE IF NOT EXISTS pendaftaran (
     -- ditempel manual oleh admin per pendaftar, di luar sistem ini)
     materai_status ENUM('Belum','Sudah') NOT NULL DEFAULT 'Belum',
 
-    -- Paket pendaftaran yang dipilih di form (hanya relevan utk jenis_pendaftar = 'Baru')
-    paket_pendaftaran ENUM('Lunas','Binaan','Kondisi Ekonomi') NOT NULL DEFAULT 'Lunas',
+    -- Paket pendaftaran yang dipilih di form (hanya relevan utk jenis_pendaftar = 'Baru').
+    -- 'Binaan' dipertahankan di enum utk kompatibilitas data lama - nilai baru yang
+    -- ditulis sistem selalu 'Cicilan' (lihat migrasi UPDATE di bawah).
+    paket_pendaftaran ENUM('Lunas','Cicilan','Binaan','Kondisi Ekonomi') NOT NULL DEFAULT 'Lunas',
     nominal_kondisi_ekonomi DECIMAL(12,0) NULL,
 
     -- Pendaftaran baru vs pemain lama yang melengkapi data digital
@@ -76,9 +78,10 @@ CREATE TABLE IF NOT EXISTS pendaftaran (
     -- klaim ORANG TUA sendiri soal lunas/belum riwayat bayar lama (bukan status resmi admin)
     klaim_lunas_lama ENUM('Sudah Lunas','Belum Lunas') NULL,
 
-    -- Status pembayaran resmi yg dikontrol admin (Belum Bayar -> Menunggu
-    -- Konfirmasi setelah bukti transfer diupload -> Lunas setelah diverifikasi admin)
-    status_pembayaran ENUM('Belum Bayar','Menunggu Konfirmasi','Lunas') NOT NULL DEFAULT 'Belum Bayar',
+    -- Status pembayaran resmi yg dikontrol admin (Belum Bayar -> Cicilan 1/2/3
+    -- sesuai progres cicilan -> Menunggu Konfirmasi setelah bukti transfer
+    -- diupload -> Lunas setelah diverifikasi admin)
+    status_pembayaran ENUM('Belum Bayar','Cicilan 1','Cicilan 2','Cicilan 3','Menunggu Konfirmasi','Lunas') NOT NULL DEFAULT 'Belum Bayar',
 
     ip_pendaftar VARCHAR(45)
 );
@@ -89,12 +92,22 @@ CREATE TABLE IF NOT EXISTS pendaftaran (
 ALTER TABLE pendaftaran MODIFY COLUMN jenis_kelamin ENUM('Laki-laki','Perempuan') NULL;
 ALTER TABLE pendaftaran MODIFY COLUMN status ENUM('Menunggu Kelengkapan','Baru','Diverifikasi','Diterima','Ditolak') NOT NULL DEFAULT 'Menunggu Kelengkapan';
 ALTER TABLE pendaftaran ADD COLUMN IF NOT EXISTS materai_status ENUM('Belum','Sudah') NOT NULL DEFAULT 'Belum';
-ALTER TABLE pendaftaran ADD COLUMN IF NOT EXISTS paket_pendaftaran ENUM('Lunas','Binaan','Kondisi Ekonomi') NOT NULL DEFAULT 'Lunas';
+ALTER TABLE pendaftaran ADD COLUMN IF NOT EXISTS paket_pendaftaran ENUM('Lunas','Cicilan','Binaan','Kondisi Ekonomi') NOT NULL DEFAULT 'Lunas';
 ALTER TABLE pendaftaran ADD COLUMN IF NOT EXISTS nominal_kondisi_ekonomi DECIMAL(12,0) NULL;
 ALTER TABLE pendaftaran ADD COLUMN IF NOT EXISTS file_bukti_transfer VARCHAR(255) NULL;
 ALTER TABLE pendaftaran ADD COLUMN IF NOT EXISTS jenis_pendaftar ENUM('Baru','Pemain Lama') NOT NULL DEFAULT 'Baru';
 ALTER TABLE pendaftaran ADD COLUMN IF NOT EXISTS klaim_lunas_lama ENUM('Sudah Lunas','Belum Lunas') NULL;
 ALTER TABLE pendaftaran ADD COLUMN IF NOT EXISTS status_pembayaran ENUM('Belum Bayar','Menunggu Konfirmasi','Lunas') NOT NULL DEFAULT 'Belum Bayar';
+
+-- "Paket Binaan" diganti nama jadi "Cicilan" (biaya Rp500rb sekarang diartikan
+-- sbg cicilan pertama menuju total Rp2.500.000, bukan paket terpisah).
+-- Ubah dulu tipe kolomnya spy bisa menampung nilai baru, baru migrasi data lama.
+ALTER TABLE pendaftaran MODIFY COLUMN paket_pendaftaran ENUM('Lunas','Cicilan','Binaan','Kondisi Ekonomi') NOT NULL DEFAULT 'Lunas';
+UPDATE pendaftaran SET paket_pendaftaran = 'Cicilan' WHERE paket_pendaftaran = 'Binaan';
+
+-- Tambah tahapan Cicilan 1/2/3 ke status pembayaran, supaya admin bisa
+-- mencatat progres cicilan bertahap (bukan cuma Belum Bayar/Lunas).
+ALTER TABLE pendaftaran MODIFY COLUMN status_pembayaran ENUM('Belum Bayar','Cicilan 1','Cicilan 2','Cicilan 3','Menunggu Konfirmasi','Lunas') NOT NULL DEFAULT 'Belum Bayar';
 
 -- Akun admin (multi-user) untuk login ke admin.php.
 -- ADMIN_USERNAME/ADMIN_PASSWORD di config.php tetap berfungsi sbg akun

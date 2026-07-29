@@ -222,6 +222,17 @@
   .bank-info-row b{color:var(--ink-600); font-weight:600;}
   .bank-info-row span{font-weight:700; color:var(--pitch-900); text-align:right;}
 
+  .paket-section-title{
+    margin:16px 0 8px; padding-top:12px; border-top:1px dashed var(--line-200);
+    font-size:12px; font-weight:700; letter-spacing:.03em; text-transform:uppercase;
+    color:var(--pitch-700);
+  }
+  .cicilan-bubble{
+    background:var(--pitch-900); color:#fff; font-size:12.5px; line-height:1.4;
+    padding:11px 14px; border-radius:10px; margin-top:10px;
+    opacity:0; transform:translateY(-4px); transition:opacity .25s ease, transform .25s ease;
+  }
+  .cicilan-bubble.show{opacity:1; transform:translateY(0);}
   .paket-list{display:flex; flex-direction:column; gap:10px;}
   .paket-card{
     display:block; border:1.5px solid var(--line-200); border-radius:12px; padding:14px;
@@ -644,7 +655,10 @@
           </ul>
           <p class="hint">Bonus 2 seragam &amp; 1 bola hanya berlaku bila dibayar lunas sekaligus. Setiap tahun berikutnya akan ada biaya pendaftaran ulang terpisah, untuk administrasi &amp; kebutuhan di tahun berjalan.</p>
         </label>
+      </div>
 
+      <div class="paket-section-title">Cicilan Pertama Pendaftaran</div>
+      <div class="paket-list">
         <label class="paket-card">
           <input type="radio" name="paket_pendaftaran" value="Cicilan">
           <div class="paket-card-title">📆 Cicilan — mulai Rp 500.000</div>
@@ -665,6 +679,9 @@
           <p class="hint">Jika total pembayaran masih di bawah Rp 500.000, pemain belum menerima seragam. Begitu total mencapai Rp 500.000, pemain menerima 1 pasang seragam latihan (sama seperti cicilan pertama). Bonus seragam ke-2 &amp; bola gratis tetap hanya berlaku untuk pembayaran lunas sekaligus.</p>
         </label>
       </div>
+
+      <div class="cicilan-bubble" id="cicilanBubble" hidden>💬 Dengan memilih ini, Anda setuju untuk mencicil biaya daftar, dengan konsekuensi hilangnya hak memiliki 1 Bola + 2 pasang seragam latihan.</div>
+      <p class="hint" style="margin-top:8px;">Cicilan lanjutan akan dilakukan bersama bagian administrasi Petra FC.</p>
     </div>
 
     <div class="card" id="statusLamaCard" hidden>
@@ -1317,7 +1334,32 @@
       card.classList.toggle('selected', r.checked);
     });
   }
-  form.querySelectorAll('input[name="paket_pendaftaran"]').forEach(function(r){ r.addEventListener('change', updateBiayaBox); });
+  // Bubble tip singkat saat pilih salah satu opsi cicilan - muncul lalu hilang sendiri,
+  // supaya orang tua sadar sedang memilih jalur cicilan (bukan pendaftaran lunas).
+  let cicilanBubbleTimer = null;
+  function showCicilanBubble(){
+    const bubble = document.getElementById('cicilanBubble');
+    if(!bubble) return;
+    clearTimeout(cicilanBubbleTimer);
+    bubble.hidden = false;
+    bubble.classList.remove('show');
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){ bubble.classList.add('show'); });
+    });
+    cicilanBubbleTimer = setTimeout(function(){
+      bubble.classList.remove('show');
+      setTimeout(function(){ bubble.hidden = true; }, 300);
+    }, 4500);
+  }
+
+  form.querySelectorAll('input[name="paket_pendaftaran"]').forEach(function(r){
+    r.addEventListener('change', function(){
+      updateBiayaBox();
+      if(r.checked && (r.value === 'Cicilan' || r.value === 'Kondisi Ekonomi')){
+        showCicilanBubble();
+      }
+    });
+  });
   document.getElementById('nominalKondisiEkonomi').addEventListener('input', updateBiayaBox);
   updateBiayaBox();
 

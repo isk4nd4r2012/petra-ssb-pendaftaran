@@ -267,12 +267,16 @@ Orang tua isi index.html (5 langkah, di HP) - HANYA Nama Lengkap yang wajib
   sesuai progres cicilan yang sudah masuk (sama seperti pola status
   pembayaran & materai sebelumnya — bukan penghitungan otomatis, tetap
   verifikasi manual oleh admin berdasarkan bukti transfer/WhatsApp).
+- **Perjelas 2 opsi cicilan di step 5**: kartu "Cicilan" dan "Sesuai Kondisi
+  Ekonomi" sekarang dikelompokkan di bawah judul pemisah **"Cicilan Pertama
+  Pendaftaran"**, terpisah dari kartu "Lunas" di atasnya. Begitu salah satu
+  dari 2 opsi ini dipilih, muncul bubble tip singkat (otomatis hilang setelah
+  ±4.5 detik): *"Dengan memilih ini, Anda setuju untuk mencicil biaya daftar,
+  dengan konsekuensi hilangnya hak memiliki 1 Bola + 2 pasang seragam
+  latihan."* Di bawah kedua kartu itu juga ditambahkan catatan tetap:
+  *"Cicilan lanjutan akan dilakukan bersama bagian administrasi Petra FC."*
 
 ### ⚠️ Wajib dilakukan di server setelah update ini
 
-1. **Import ulang `schema.sql` lewat phpMyAdmin** (tab Import) — mengubah
-   enum `paket_pendaftaran` (tambah `'Cicilan'`, migrasi data lama dari
-   `'Binaan'`) dan `status_pembayaran` (tambah `'Cicilan 1'`, `'Cicilan 2'`,
-   `'Cicilan 3'`). Aman, tidak menghapus data pendaftar yang sudah ada.
-2. Upload ulang **4 file**: `index.html`, `submit.php`,
-   `inc-cetak-dokumen.php`, `admin.php`.
+Tidak ada perubahan skema database di update ini (tidak perlu import ulang
+`schema.sql`). Cukup upload ulang **1 file**: `index.html`.

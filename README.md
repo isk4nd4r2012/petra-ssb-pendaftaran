@@ -275,6 +275,22 @@ Orang tua isi index.html (5 langkah, di HP) - HANYA Nama Lengkap yang wajib
   dengan konsekuensi hilangnya hak memiliki 1 Bola + 2 pasang seragam
   latihan."* Di bawah kedua kartu itu juga ditambahkan catatan tetap:
   *"Cicilan lanjutan akan dilakukan bersama bagian administrasi Petra FC."*
+- **Perbaikan thumbnail preview saat link dibagikan (WhatsApp/Facebook/IG)**:
+  `index.html` ternyata kehilangan seluruh tag meta Open Graph & Twitter Card
+  (`og:image`, `og:title`, dst) — jadi platform sosial tidak tahu gambar/judul
+  apa yang harus ditampilkan saat link dibagikan. Ditambahkan kembali,
+  mengarah ke `assets/og-thumbnail.jpg` (sudah ada di repo & di server,
+  1200×630px — ukuran ideal utk preview) dengan `og:url` yang diperbaiki ke
+  alamat yang benar (`https://petrafc.com/pendaftaran/index.html`, bukan lagi
+  `/daftar` peninggalan versi lama). Juga ditambahkan kembali favicon
+  (`assets/petra-logo.png`).
+
+  Catatan: WhatsApp & Facebook **meng-cache preview per link** cukup lama.
+  Kalau setelah upload masih belum muncul, coba cek/paksa refresh cache lewat
+  [Facebook Sharing Debugger](https://developers.facebook.com/tools/debug/)
+  (masukkan link, klik "Scrape Again"), atau kirim link dengan sedikit
+  parameter tambahan di akhir (mis. `?v=2`) sebagai cara lain memaksa
+  platform mengambil ulang datanya.
 
 ### ⚠️ Wajib dilakukan di server setelah update ini
 
